@@ -11,15 +11,18 @@ import {
   ShieldCheck, 
   ArrowLeft,
   X,
-  Play
+  Play,
+  Coins
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { MOCK_CAPTAINS } from '../mock/mockData';
 import { useVehicle } from '../context/VehicleContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function RideTracking() {
   const navigate = useNavigate();
   const { selectedVehicle } = useVehicle();
+  const { addCoins } = useAuth();
   const captain = MOCK_CAPTAINS[0]; // Suresh Patil (Bike Captain)
 
   // Ride lifecycle state: 'requested' | 'accepted' | 'arriving' | 'in_progress' | 'completed' | 'cancelled'
@@ -47,7 +50,10 @@ export default function RideTracking() {
     else if (status === 'arriving') {
       setStatus('in_progress');
       setEta(8);
-    } else if (status === 'in_progress') setStatus('completed');
+    } else if (status === 'in_progress') {
+      setStatus('completed');
+      addCoins?.(10);
+    }
   };
 
   const handleShareTrip = () => {
@@ -267,6 +273,12 @@ export default function RideTracking() {
                 <h4 className="font-bold text-lg text-[#0A0A14]">Ride Completed!</h4>
                 <p className="text-2xl font-bold font-mono text-[#0A0A14]">₹35.00</p>
                 <span className="hud text-[10px] text-[#5B5B73]">PAID VIA CASH / UPI</span>
+
+                {/* Coins reward badge */}
+                <div className="mt-2 p-2 bg-[#FFC21A]/20 border border-[#FFC21A] rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold text-[#0A0A14]">
+                  <span>🪙</span>
+                  <span>+10 MySawari Coins Credited!</span>
+                </div>
               </div>
 
               {!ratingSubmitted ? (

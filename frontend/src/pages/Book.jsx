@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, 
@@ -12,11 +12,13 @@ import {
   Shield, 
   Clock, 
   ArrowRight,
-  Info
+  Info,
+  Server
 } from 'lucide-react';
 import { MOCK_LOCATIONS } from '../mock/mockData';
 import { useVehicle } from '../context/VehicleContext';
 import VehicleMorphCanvas from '../three/VehicleMorphCanvas';
+import api from '../services/api';
 
 export default function Book() {
   const navigate = useNavigate();
@@ -35,10 +37,31 @@ export default function Book() {
 
   // Breakdown accordion
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [backendFare, setBackendFare] = useState(null);
+  const [backendStatus, setBackendStatus] = useState('checking');
 
   // Calculated route metrics for Belagavi KLE Tech -> Chennamma Circle
   const distanceKm = 2.4;
   const durationMin = 8.0;
+
+  // Check live backend API health & sync fare estimate
+  useEffect(() => {
+    let mounted = true;
+    api.checkHealth().then((health) => {
+      if (mounted) {
+        setBackendStatus(health?.status === 'ok' ? 'online' : 'fallback');
+      }
+    });
+
+    const code = selectedVehicle?.code || 'cab';
+    api.getFareEstimate(code, Math.round(distanceKm * 1000)).then((res) => {
+      if (mounted && res?.total) {
+        setBackendFare(res.total);
+      }
+    });
+
+    return () => { mounted = false; };
+  }, [selectedVehicle, distanceKm]);
 
   // Swap locations
   const handleSwap = () => {
@@ -65,13 +88,13 @@ export default function Book() {
     navigate('/ride/live-trip-demo');
   };
 
-  // Fare calculations
+  // Fare calculations with backend integration
   const calculateFare = (v) => {
     const raw = v.baseFare + v.perKm * distanceKm + v.perMin * durationMin;
     return Math.max(v.minFare, Math.round(raw));
   };
 
-  const selectedFare = calculateFare(selectedVehicle);
+  const selectedFare = backendFare || calculateFare(selectedVehicle);
 
   return (
     <div className="relative w-full min-h-screen pt-24 pb-12 px-4 md:px-8 flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
@@ -81,7 +104,13 @@ export default function Book() {
           {/* Header & AI Toggle */}
           <div className="flex items-center justify-between pb-4 border-b border-[#DCDAF0]">
             <div>
-              <span className="hud text-[10px] text-[#3A4DFF] font-bold">RIDE DISPATCH · BELAGAVI</span>
+              <div className="flex items-center gap-2">
+                <span className="hud text-[10px] text-[#3A4DFF] font-bold">RIDE DISPATCH · BELAGAVI</span>
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${backendStatus === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  {backendStatus === 'online' ? 'API v3.0 Live' : 'Demo Local'}
+                </span>
+              </div>
               <h2 className="text-xl font-bold text-[#0A0A14]">Where to?</h2>
             </div>
             <button

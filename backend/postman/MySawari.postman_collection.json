@@ -1,0 +1,334 @@
+{
+  "info": {
+    "name": "MySawari Backend API",
+    "description": "MySawari v3 API collection. Configure baseUrl, accessToken and resource IDs. Admin-only requests require an active admin token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "accessToken",
+      "value": "PASTE_SUPABASE_ACCESS_TOKEN_HERE"
+    },
+    {
+      "key": "vehicleTypeId",
+      "value": "REPLACE_WITH_VEHICLE_TYPE_UUID"
+    },
+    {
+      "key": "rideId",
+      "value": "REPLACE_WITH_RIDE_UUID"
+    },
+    {
+      "key": "poolId",
+      "value": "REPLACE_WITH_POOL_UUID"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/health"
+      }
+    },
+    {
+      "name": "My Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/profile"
+      }
+    },
+    {
+      "name": "Vehicle Types",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/vehicle-types"
+      }
+    },
+    {
+      "name": "Route Estimate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"origin\": { \"latitude\": 15.8497, \"longitude\": 74.4977 },\n  \"destination\": { \"latitude\": 15.4589, \"longitude\": 75.0078 }\n}"
+        },
+        "url": "{{baseUrl}}/api/routing/estimate"
+      }
+    },
+    {
+      "name": "Create Ride",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"vehicle_type_id\": \"{{vehicleTypeId}}\",\n  \"pickup\": { \"latitude\": 15.8497, \"longitude\": 74.4977 },\n  \"drop\": { \"latitude\": 15.8580, \"longitude\": 74.5100 },\n  \"pickup_address\": \"Belagavi Demo Pickup\",\n  \"drop_address\": \"Belagavi Demo Drop\",\n  \"passenger_count\": 1,\n  \"pooling_opt_in\": false,\n  \"idempotency_key\": \"mysawari-demo-ride-001\"\n}"
+        },
+        "url": "{{baseUrl}}/api/rides"
+      }
+    },
+    {
+      "name": "Get Ride",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/rides/{{rideId}}"
+      }
+    },
+    {
+      "name": "AI Booking Assistant",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Book a car from Belagavi railway station to KLE Tech\"\n}"
+        },
+        "url": "{{baseUrl}}/api/assistant/chat"
+      }
+    },
+    {
+      "name": "Dispatch Analytics (Admin)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/analytics/dispatch"
+      }
+    },
+    {
+      "name": "Refresh Zone Intelligence and Forecasts (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/demand/refresh",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Nearby Captains (Rider)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/captains/nearby?latitude=15.8497&longitude=74.4977&radiusMeters=5000"
+      }
+    },
+    {
+      "name": "Pool Candidate Search (Rider)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pooling/match",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ride_id\": \"{{rideId}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Create Pool (Rider)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pooling/create",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"ride_id\": \"{{rideId}}\",\n  \"max_detour_percent\": 20\n}"
+        }
+      }
+    },
+    {
+      "name": "Optimize Pool Route (Participant)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pooling/{{poolId}}/optimize",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Captain Accept Ride or Pool",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/rides/{{rideId}}/captain/accept",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Captain Arrived",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/rides/{{rideId}}/captain/arrived",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Captain Start Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/rides/{{rideId}}/captain/start",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    },
+    {
+      "name": "Captain Complete Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/rides/{{rideId}}/captain/complete",
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        }
+      }
+    }
+  ]
+}

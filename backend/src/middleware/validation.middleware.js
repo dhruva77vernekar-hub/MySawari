@@ -1,0 +1,2 @@
+import { AppError } from '../utils/app-error.js';
+export function validate(schemas={}) { return (req,res,next)=>{ const errors=[]; req.validated={}; for(const [key,schema] of Object.entries(schemas)){if(!schema)continue;const result=schema.safeParse(req[key]);if(!result.success)errors.push(...result.error.issues.map(i=>({location:key,path:i.path.join('.'),message:i.message})));else req.validated[key]=result.data;} if(errors.length)return next(new AppError(422,'VALIDATION_ERROR','Please check the submitted information.',errors));next();};}

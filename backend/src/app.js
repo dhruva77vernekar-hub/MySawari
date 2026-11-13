@@ -1,26 +1,4 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { env } from './config/env.js';
-
-export const app = express();
-
-app.use(helmet());
-app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
-app.use(express.json());
-app.use(morgan('dev'));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'MySawari API',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('MySawari Backend API is running');
-});
+import express from 'express'; import cors from 'cors'; import helmet from 'helmet'; import pinoHttp from 'pino-http'; import { randomUUID } from 'node:crypto';
+import { env } from './config/env.js'; import { requestIdMiddleware } from './middleware/request-id.middleware.js'; import { apiRateLimit } from './middleware/rate-limit.middleware.js'; import apiRoutes from './routes/index.routes.js'; import { notFoundMiddleware,errorMiddleware } from './middleware/error.middleware.js';
+export const app=express(); if(env.trustProxy)app.set('trust proxy',1); app.disable('x-powered-by'); app.use(requestIdMiddleware); app.use(pinoHttp({genReqId:req=>req.headers['x-request-id']||randomUUID(),redact:['req.headers.authorization','req.headers.cookie']})); app.use(helmet());
+app.use(cors({origin(origin,cb){if(!origin||env.corsOrigins.includes(origin))return cb(null,true);return cb(null,false);},methods:['GET','POST','PATCH','DELETE','OPTIONS'],allowedHeaders:['Content-Type','Authorization','X-Request-Id'],credentials:false})); app.use(express.json({limit:'100kb'})); app.use('/api',apiRateLimit); app.use('/api',apiRoutes); app.use(notFoundMiddleware); app.use(errorMiddleware);

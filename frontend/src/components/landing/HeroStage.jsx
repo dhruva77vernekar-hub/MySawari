@@ -1,21 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, MapPin, Navigation, Clock, ShieldCheck, Zap } from 'lucide-react';
+import { 
+  ArrowRight, 
+  MapPin, 
+  Navigation, 
+  ArrowUpDown, 
+  Clock, 
+  Search,
+  Check
+} from 'lucide-react';
 import VehicleMorphCanvas from '../../three/VehicleMorphCanvas';
 import DotGrid from '../ui/DotGrid';
 import { useVehicle } from '../../context/VehicleContext';
+import { MOCK_LOCATIONS } from '../../mock/mockData';
 
 export default function HeroStage() {
   const navigate = useNavigate();
   const { vehicles, selectedVehicle, selectVehicleByCode } = useVehicle();
 
+  // Central location inputs state
+  const [pickup, setPickup] = useState('KLE Technological University Campus');
+  const [drop, setDrop] = useState('Rani Chennamma Circle');
+  const [isPickupOpen, setIsPickupOpen] = useState(false);
+  const [isDropOpen, setIsDropOpen] = useState(false);
+
   const currentIndex = vehicles.findIndex((v) => v.code === selectedVehicle.code) + 1;
 
-  // Estimated fare for Belagavi local trip (KLE Tech to Chennamma Circle 2.4 km)
-  const estFare = Math.max(
-    selectedVehicle.minFare,
-    Math.round(selectedVehicle.baseFare + selectedVehicle.perKm * 2.4 + selectedVehicle.perMin * 8)
-  );
+  // Swap pickup & destination
+  const handleSwap = () => {
+    const temp = pickup;
+    setPickup(drop);
+    setDrop(temp);
+  };
+
+  // Launch into booking with current locations & vehicle
+  const handleProceed = () => {
+    navigate('/book', {
+      state: {
+        pickup,
+        drop,
+        vehicleCode: selectedVehicle.code
+      }
+    });
+  };
 
   return (
     <section className="relative min-h-[95vh] md:min-h-screen pt-28 pb-16 px-4 md:px-6 flex flex-col items-center justify-between overflow-hidden bg-gradient-to-b from-[#E9ECF2] via-[#F1F0FA] to-[#F1F0FA]">
@@ -52,6 +79,10 @@ export default function HeroStage() {
           </span>
           <span className="hud hidden sm:inline text-[#8E96A6]">
             COORD: 15.8497° N, 74.4977° E (BELAGAVI)
+          </span>
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            BACKEND v3.0 LIVE :4000
           </span>
         </div>
 
@@ -109,37 +140,127 @@ export default function HeroStage() {
           })}
         </div>
 
-        {/* RAPIDO-STYLE CENTRAL HIGHLIGHTED BOOKING BAR */}
+        {/* MAIN THING: FRONT & CENTER PICKUP & DESTINATION INPUT CARD */}
         <div className="w-full max-w-2xl mt-8 z-20">
-          <div className="p-4 sm:p-5 rounded-[26px] bg-white border-2 border-[#FFC21A] shadow-[0_20px_60px_-15px_rgba(255,194,26,0.35)] flex flex-col sm:flex-row items-center justify-between gap-4 transition-all hover:scale-[1.01]">
-            {/* Left: Route & Vehicle snapshot */}
-            <div className="flex items-center gap-3 text-left w-full sm:w-auto">
-              <div className="w-12 h-12 rounded-2xl bg-[#F1F0FA] flex items-center justify-center font-bold text-sm text-[#3A4DFF] flex-shrink-0 border border-[#DCDAF0]">
-                {selectedVehicle.code.toUpperCase()}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-base text-[#0A0A14]">{selectedVehicle.label}</span>
-                  <span className="text-xs px-2 py-0.5 bg-[#FFC21A]/20 text-[#0A0A14] font-bold rounded-full">
-                    {selectedVehicle.tag}
-                  </span>
+          <div className="p-4 sm:p-6 rounded-[28px] bg-white border border-[#DCDAF0] shadow-[0_25px_70px_-20px_rgba(58,77,255,0.22)] text-left space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCDAF0]">
+              <span className="hud text-[11px] text-[#3A4DFF] font-bold">
+                ENTER PICKUP & DESTINATION
+              </span>
+              <span className="text-xs text-[#5B5B73] font-medium">
+                Active Ride: <strong className="text-[#0A0A14]">{selectedVehicle.label}</strong>
+              </span>
+            </div>
+
+            {/* Inputs Container */}
+            <div className="relative space-y-2">
+              {/* Pickup Input */}
+              <div className="relative">
+                <div className="flex items-center bg-[#F1F0FA] rounded-[18px] px-4 py-3.5 border border-transparent focus-within:border-[#3A4DFF] focus-within:bg-white transition-all shadow-sm">
+                  <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 mr-3 flex-shrink-0" />
+                  <input
+                    value={pickup}
+                    onChange={(e) => setPickup(e.target.value)}
+                    onFocus={() => setIsPickupOpen(true)}
+                    placeholder="Enter pickup location (Starting point)"
+                    className="w-full bg-transparent text-sm font-medium outline-none text-[#0A0A14] placeholder:text-[#8E96A6]"
+                  />
                 </div>
-                <p className="text-xs text-[#5B5B73] flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> KLE Tech Campus → Chennamma Circle
-                </p>
+
+                {isPickupOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-[#DCDAF0] shadow-2xl z-30 p-2 space-y-1">
+                    <span className="hud text-[10px] text-[#8E96A6] px-2 py-1 block">BELAGAVI LANDMARKS</span>
+                    {MOCK_LOCATIONS.map((loc) => (
+                      <button
+                        key={loc.id}
+                        onClick={() => {
+                          setPickup(loc.name);
+                          setIsPickupOpen(false);
+                        }}
+                        className="w-full text-left p-2.5 hover:bg-[#F1F0FA] rounded-xl flex items-start gap-2.5 transition-colors"
+                      >
+                        <MapPin className="w-4 h-4 text-[#3A4DFF] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-[#0A0A14]">{loc.name}</p>
+                          <p className="text-[10px] text-[#5B5B73]">{loc.area}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Swap Button */}
+              <div className="flex justify-end pr-5 -my-2.5 relative z-10">
+                <button
+                  onClick={handleSwap}
+                  className="w-7 h-7 rounded-full bg-white border border-[#DCDAF0] shadow-sm flex items-center justify-center hover:bg-[#F1F0FA] transition-colors"
+                  title="Swap locations"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#5B5B73]" />
+                </button>
+              </div>
+
+              {/* Destination Input */}
+              <div className="relative">
+                <div className="flex items-center bg-[#F1F0FA] rounded-[18px] px-4 py-3.5 border border-transparent focus-within:border-[#3A4DFF] focus-within:bg-white transition-all shadow-sm">
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#EF2B3E] mr-3 flex-shrink-0" />
+                  <input
+                    value={drop}
+                    onChange={(e) => setDrop(e.target.value)}
+                    onFocus={() => setIsDropOpen(true)}
+                    placeholder="Enter drop destination"
+                    className="w-full bg-transparent text-sm font-medium outline-none text-[#0A0A14] placeholder:text-[#8E96A6]"
+                  />
+                </div>
+
+                {isDropOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl border border-[#DCDAF0] shadow-2xl z-30 p-2 space-y-1">
+                    <span className="hud text-[10px] text-[#8E96A6] px-2 py-1 block">BELAGAVI LANDMARKS</span>
+                    {MOCK_LOCATIONS.map((loc) => (
+                      <button
+                        key={loc.id}
+                        onClick={() => {
+                          setDrop(loc.name);
+                          setIsDropOpen(false);
+                        }}
+                        className="w-full text-left p-2.5 hover:bg-[#F1F0FA] rounded-xl flex items-start gap-2.5 transition-colors"
+                      >
+                        <MapPin className="w-4 h-4 text-[#EF2B3E] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-[#0A0A14]">{loc.name}</p>
+                          <p className="text-[10px] text-[#5B5B73]">{loc.area}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right: Giant Highlighted Rapido Amber Action Button */}
-            <button
-              onClick={() => navigate('/book')}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#FFC21A] hover:bg-[#f0b207] text-[#0A0A14] font-black text-sm tracking-wider uppercase shadow-[0_10px_25px_-5px_rgba(255,194,26,0.6)] hover:shadow-[0_15px_35px_-5px_rgba(255,194,26,0.8)] transition-all transform active:scale-95 flex items-center justify-center gap-3 select-none cursor-pointer flex-shrink-0"
-            >
-              <span>BOOK NOW · ₹{estFare}</span>
-              <span className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center">
-                <ArrowRight className="w-4 h-4 text-[#0A0A14]" />
-              </span>
-            </button>
+            {/* Quick chips & Action Button */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] hud text-[#8E96A6] mr-1">QUICK:</span>
+                {MOCK_LOCATIONS.slice(0, 3).map((loc) => (
+                  <button
+                    key={loc.id}
+                    onClick={() => setDrop(loc.name)}
+                    className="text-[11px] px-2.5 py-1 bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] rounded-full transition-colors"
+                  >
+                    {loc.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleProceed}
+                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#0A0A14] hover:bg-[#3A4DFF] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
+              >
+                <span>Find {selectedVehicle.label}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -156,7 +277,7 @@ export default function HeroStage() {
           to="/book"
           className="group px-6 py-3 rounded-full bg-white hover:bg-[#3A4DFF] hover:text-white border border-[#DCDAF0] hover:border-[#3A4DFF] text-[#0A0A14] font-semibold text-xs tracking-wider uppercase transition-all shadow-sm flex items-center gap-2"
         >
-          <span>CUSTOM ROUTE PICKER</span>
+          <span>FULL MAP VIEW</span>
           <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
