@@ -20,21 +20,23 @@ export const VEHICLE_DATA = [
     perMin: 1.5,
     minFare: 80,
     etaMin: 4,
-    color: '#3A4DFF'
+    color: '#3A4DFF',
+    image: '/vehicles/cab.png'
   },
   {
     id: 2,
-    code: 'bike',
-    label: 'Bike Taxi',
-    tagline: 'Fastest in Traffic · 1 Seat',
-    tag: 'FASTEST',
-    seats: 1,
-    baseFare: 20,
-    perKm: 6,
-    perMin: 0.5,
-    minFare: 30,
-    etaMin: 2,
-    color: '#FFC21A'
+    code: 'xl',
+    label: 'SUV / XL',
+    tagline: 'Spacious & Luggage · 6 Seats',
+    tag: 'PREMIUM',
+    seats: 6,
+    baseFare: 70,
+    perKm: 18,
+    perMin: 2.0,
+    minFare: 120,
+    etaMin: 5,
+    color: '#8B5CF6',
+    image: '/vehicles/xl.png'
   },
   {
     id: 3,
@@ -48,49 +50,23 @@ export const VEHICLE_DATA = [
     perMin: 0.8,
     minFare: 45,
     etaMin: 3,
-    color: '#F59E0B'
+    color: '#F59E0B',
+    image: '/vehicles/auto.png'
   },
   {
     id: 4,
-    code: 'scooter',
-    label: 'EV Scooter',
-    tagline: 'Green & Silent · 2 Seats',
-    tag: 'ECO EV',
-    seats: 2,
-    baseFare: 25,
-    perKm: 7,
-    perMin: 0.6,
-    minFare: 35,
-    etaMin: 3,
-    color: '#10B981'
-  },
-  {
-    id: 5,
-    code: 'suv',
-    label: 'SUV / XL',
-    tagline: 'Spacious & Luggage · 6 Seats',
-    tag: 'PREMIUM',
-    seats: 6,
-    baseFare: 70,
-    perKm: 18,
-    perMin: 2.0,
-    minFare: 120,
-    etaMin: 5,
-    color: '#8B5CF6'
-  },
-  {
-    id: 6,
-    code: 'shuttle',
-    label: 'Campus Shuttle',
-    tagline: 'Student Pool · 12 Seats',
-    tag: 'POOL',
-    seats: 12,
-    baseFare: 15,
-    perKm: 4,
-    perMin: 0.3,
-    minFare: 25,
-    etaMin: 6,
-    color: '#06B6D4'
+    code: 'bike',
+    label: 'Bike Taxi',
+    tagline: 'Fastest in Traffic · 1 Seat',
+    tag: 'FASTEST',
+    seats: 1,
+    baseFare: 20,
+    perKm: 6,
+    perMin: 0.5,
+    minFare: 30,
+    etaMin: 2,
+    color: '#FFC21A',
+    image: '/vehicles/bike.png'
   }
 ];
 

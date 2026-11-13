@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Menu, User, Coins, LogIn } from 'lucide-react';
+import { ArrowUpRight, Menu, User, Coins, LogIn, Globe } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import ProfileDrawer from '../profile/ProfileDrawer';
 
 export default function FloatingNav({ onOpenMenu }) {
   const { user } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const userInitial = user?.fullName
     ? user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)
     : 'U';
+
+  const toggleLanguage = () => {
+    if (lang === 'en') setLang('kn');
+    else if (lang === 'kn') setLang('hi');
+    else setLang('en');
+  };
 
   return (
     <>
@@ -23,15 +31,25 @@ export default function FloatingNav({ onOpenMenu }) {
         >
           <span className="w-2.5 h-2.5 rounded-full bg-[#3A4DFF] animate-pulse" />
           <span className="font-semibold text-sm tracking-tight text-[#0A0A14] group-hover:text-[#3A4DFF] transition-colors">
-            MYSAWARI
+            {t('appName').toUpperCase()}
           </span>
           <span className="hud text-[10px] bg-[#E9ECF2] text-[#5B5B73] px-2 py-0.5 rounded-full">
             BELAGAVI
           </span>
         </Link>
 
-        {/* Right Corner: Profile Corner + Book Now + Menu */}
+        {/* Right Corner: Language Switcher + Profile Corner + Book Now + Menu */}
         <div className="pointer-events-auto flex items-center gap-2">
+          {/* Quick Language Toggle */}
+          <button
+            onClick={toggleLanguage}
+            title="Switch Language (English / ಕನ್ನಡ / हिंदी)"
+            className="px-3 py-2 bg-white/85 backdrop-blur-md hover:bg-white text-[#0A0A14] rounded-full text-xs font-bold border border-[#DCDAF0] hover:border-[#3A4DFF] transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#3A4DFF]" />
+            <span className="uppercase text-[11px]">{lang}</span>
+          </button>
+
           {/* PROFILE CORNER BUTTON */}
           {user ? (
             <button
@@ -63,7 +81,7 @@ export default function FloatingNav({ onOpenMenu }) {
               to="/book"
               className="hidden sm:flex group px-5 py-3 bg-[#0A0A14] hover:bg-[#3A4DFF] text-white rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 shadow-sm items-center gap-2 hover:shadow-[0_10px_30px_-10px_rgba(58,77,255,0.5)]"
             >
-              <span>BOOK NOW</span>
+              <span>{t('bookNow').toUpperCase()}</span>
               <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center transition-transform group-hover:rotate-45">
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </span>
@@ -77,7 +95,7 @@ export default function FloatingNav({ onOpenMenu }) {
             className="px-4 py-3 bg-white/80 backdrop-blur-md hover:bg-white text-[#0A0A14] rounded-full text-xs font-semibold uppercase tracking-wider border border-[#DCDAF0] hover:border-[#3A4DFF] transition-all flex items-center gap-2 shadow-sm"
           >
             <Menu className="w-4 h-4 text-[#3A4DFF]" />
-            <span>MENU</span>
+            <span>{t('menu').toUpperCase()}</span>
           </button>
         </div>
       </header>

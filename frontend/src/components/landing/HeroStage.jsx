@@ -3,20 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, 
   MapPin, 
-  Navigation, 
   ArrowUpDown, 
   Clock, 
-  Search,
-  Check
+  Sparkles,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import VehicleMorphCanvas from '../../three/VehicleMorphCanvas';
 import DotGrid from '../ui/DotGrid';
 import { useVehicle } from '../../context/VehicleContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { MOCK_LOCATIONS } from '../../mock/mockData';
 
 export default function HeroStage() {
   const navigate = useNavigate();
   const { vehicles, selectedVehicle, selectVehicleByCode } = useVehicle();
+  const { t, lang } = useLanguage();
 
   // Central location inputs state
   const [pickup, setPickup] = useState('KLE Technological University Campus');
@@ -24,7 +26,8 @@ export default function HeroStage() {
   const [isPickupOpen, setIsPickupOpen] = useState(false);
   const [isDropOpen, setIsDropOpen] = useState(false);
 
-  const currentIndex = vehicles.findIndex((v) => v.code === selectedVehicle.code) + 1;
+  const currentIndex = vehicles.findIndex((v) => v.code === selectedVehicle?.code) + 1;
+  const isRickshaw = selectedVehicle?.code === 'auto';
 
   // Swap pickup & destination
   const handleSwap = () => {
@@ -33,13 +36,15 @@ export default function HeroStage() {
     setDrop(temp);
   };
 
-  // Launch into booking with current locations & vehicle
+  // Launch into booking: save selected vehicle & navigate to booking screen
   const handleProceed = () => {
+    const code = selectedVehicle?.code || 'auto';
+    localStorage.setItem('mysawari_selected_vehicle', code);
     navigate('/book', {
       state: {
         pickup,
         drop,
-        vehicleCode: selectedVehicle.code
+        vehicleCode: code
       }
     });
   };
@@ -71,16 +76,13 @@ export default function HeroStage() {
         />
       </div>
 
-      {/* Top HUD Row */}
+      {/* Top HUD Row - Coordinates removed per user request */}
       <div className="w-full max-w-7xl flex items-center justify-between text-xs text-[#5B5B73] z-10 pt-4">
         <div className="flex items-center gap-3">
           <span className="hud px-2.5 py-1 rounded-md bg-white/70 backdrop-blur-md border border-[#DCDAF0] text-[#3A4DFF] font-semibold">
-            VEHICLE 0{currentIndex}/0{vehicles.length} · {selectedVehicle.label.toUpperCase()}
+            VEHICLE 0{currentIndex || 1}/0{vehicles.length} · {selectedVehicle?.label?.toUpperCase() || 'RIDE'}
           </span>
-          <span className="hud hidden sm:inline text-[#8E96A6]">
-            COORD: 15.8497° N, 74.4977° E (BELAGAVI)
-          </span>
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             BACKEND v3.0 LIVE :4000
           </span>
@@ -89,66 +91,60 @@ export default function HeroStage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 bg-white/70 backdrop-blur-md px-3 py-1 rounded-full border border-[#DCDAF0]">
             <span className="w-2 h-2 rounded-full bg-[#FFC21A] animate-ping" />
-            <span className="hud font-bold text-[#0A0A14]">LIVE ETA: {selectedVehicle.etaMin} MIN</span>
+            <span className="hud font-bold text-[#0A0A14]">{t('liveEta')}: {selectedVehicle?.etaMin || 3} {t('min')}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Center Stage with Particle Vehicle */}
+      {/* Main Center Stage with 3D Vehicle Slider */}
       <div className="relative w-full max-w-5xl my-auto flex flex-col items-center justify-center text-center z-10">
-        {/* Igloo-style Headline */}
-        <div className="space-y-2 mb-2 select-none">
+        {/* Headline */}
+        <div className="space-y-2 mb-1 select-none">
           <span className="hud text-xs md:text-sm text-[#3A4DFF] tracking-[0.2em] font-semibold uppercase">
-            BELAGAVI'S FIRST 3D RIDE PLATFORM
+            {t('tagline')}
           </span>
-          <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-[-0.04em] text-[#0A0A14] leading-[0.95]">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-[-0.04em] text-[#0A0A14] leading-[0.98]">
             One tap. <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0A0A14] via-[#3A4DFF] to-[#0A0A14]">
               Any ride.
             </span>
           </h1>
-          <p className="text-sm md:text-base text-[#5B5B73] max-w-lg mx-auto pt-2 font-medium">
-            Touch or select any vehicle below to watch the live particle transformation.
-          </p>
         </div>
 
-        {/* The 3D Morph Canvas Container */}
+        {/* The Three.js Vehicle Slider Stage (cab, xl, auto, bike) */}
         <div className="w-full relative">
           <VehicleMorphCanvas />
         </div>
 
-        {/* 6-Vehicle Morph Selector Chips (Scrollable) */}
-        <div className="z-10 -mt-6 sm:-mt-8 flex items-center gap-2 p-2 bg-white/85 backdrop-blur-md rounded-full border border-[#DCDAF0] shadow-xl max-w-full overflow-x-auto scrollbar-none">
-          {vehicles.map((v) => {
-            const isActive = selectedVehicle.code === v.code;
-            return (
-              <button
-                key={v.id}
-                onClick={() => selectVehicleByCode(v.code)}
-                className={`px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-semibold tracking-wider whitespace-nowrap transition-all duration-300 flex items-center gap-2 ${
-                  isActive
-                    ? 'bg-[#0A0A14] text-white shadow-md scale-105'
-                    : 'text-[#5B5B73] hover:text-[#0A0A14] hover:bg-black/5'
-                }`}
-              >
-                <span>{v.label.toUpperCase()}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${isActive ? 'bg-[#3A4DFF] text-white' : 'bg-[#E9ECF2] text-[#5B5B73]'}`}>
-                  {v.tag}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {/* If user slides and rickshaw comes (or for active vehicle), put enter pickup and destination input below that */}
+        <div className="w-full max-w-2xl mt-4 z-20">
+          {/* Rickshaw Special Alert Banner */}
+          {isRickshaw && (
+            <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 via-[#FFC21A]/15 to-transparent border border-[#F59E0B]/30 flex items-center justify-between text-left animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🛺</span>
+                <div>
+                  <h4 className="text-xs font-bold text-[#0A0A14]">{t('autoActiveBanner')}</h4>
+                  <p className="text-[10px] text-[#5B5B73]">{t('autoTagline')}</p>
+                </div>
+              </div>
+              <span className="hud text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B] text-black font-bold">
+                ₹30 BASE
+              </span>
+            </div>
+          )}
 
-        {/* MAIN THING: FRONT & CENTER PICKUP & DESTINATION INPUT CARD */}
-        <div className="w-full max-w-2xl mt-8 z-20">
-          <div className="p-4 sm:p-6 rounded-[28px] bg-white border border-[#DCDAF0] shadow-[0_25px_70px_-20px_rgba(58,77,255,0.22)] text-left space-y-4">
+          {/* Pickup and Destination Input Card directly below the 3D slider */}
+          <div className={`p-4 sm:p-6 rounded-[28px] bg-white border shadow-[0_25px_70px_-20px_rgba(58,77,255,0.22)] text-left space-y-4 transition-all ${
+            isRickshaw ? 'border-[#F59E0B]/50 ring-2 ring-[#F59E0B]/20' : 'border-[#DCDAF0]'
+          }`}>
             <div className="flex items-center justify-between pb-2 border-b border-[#DCDAF0]">
-              <span className="hud text-[11px] text-[#3A4DFF] font-bold">
-                ENTER PICKUP & DESTINATION
+              <span className="hud text-[11px] text-[#3A4DFF] font-bold flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{t('whereTo').toUpperCase()}</span>
               </span>
               <span className="text-xs text-[#5B5B73] font-medium">
-                Active Ride: <strong className="text-[#0A0A14]">{selectedVehicle.label}</strong>
+                Selected: <strong className="text-[#0A0A14]">{selectedVehicle?.label}</strong> ({selectedVehicle?.tag})
               </span>
             </div>
 
@@ -162,7 +158,7 @@ export default function HeroStage() {
                     value={pickup}
                     onChange={(e) => setPickup(e.target.value)}
                     onFocus={() => setIsPickupOpen(true)}
-                    placeholder="Enter pickup location (Starting point)"
+                    placeholder={t('pickupPlaceholder')}
                     className="w-full bg-transparent text-sm font-medium outline-none text-[#0A0A14] placeholder:text-[#8E96A6]"
                   />
                 </div>
@@ -194,8 +190,8 @@ export default function HeroStage() {
               <div className="flex justify-end pr-5 -my-2.5 relative z-10">
                 <button
                   onClick={handleSwap}
-                  className="w-7 h-7 rounded-full bg-white border border-[#DCDAF0] shadow-sm flex items-center justify-center hover:bg-[#F1F0FA] transition-colors"
-                  title="Swap locations"
+                  className="w-7 h-7 rounded-full bg-white border border-[#DCDAF0] shadow-sm flex items-center justify-center hover:bg-[#F1F0FA] transition-colors cursor-pointer"
+                  title={t('swap')}
                 >
                   <ArrowUpDown className="w-3.5 h-3.5 text-[#5B5B73]" />
                 </button>
@@ -209,7 +205,7 @@ export default function HeroStage() {
                     value={drop}
                     onChange={(e) => setDrop(e.target.value)}
                     onFocus={() => setIsDropOpen(true)}
-                    placeholder="Enter drop destination"
+                    placeholder={t('dropPlaceholder')}
                     className="w-full bg-transparent text-sm font-medium outline-none text-[#0A0A14] placeholder:text-[#8E96A6]"
                   />
                 </div>
@@ -238,7 +234,7 @@ export default function HeroStage() {
               </div>
             </div>
 
-            {/* Quick chips & Action Button */}
+            {/* Quick Chips & Book Now CTA */}
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] hud text-[#8E96A6] mr-1">QUICK:</span>
@@ -246,7 +242,7 @@ export default function HeroStage() {
                   <button
                     key={loc.id}
                     onClick={() => setDrop(loc.name)}
-                    className="text-[11px] px-2.5 py-1 bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] rounded-full transition-colors"
+                    className="text-[11px] px-2.5 py-1 bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] rounded-full transition-colors cursor-pointer"
                   >
                     {loc.name.split(' ')[0]}
                   </button>
@@ -255,9 +251,9 @@ export default function HeroStage() {
 
               <button
                 onClick={handleProceed}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#0A0A14] hover:bg-[#3A4DFF] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#0A0A14] hover:bg-[#3A4DFF] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                <span>Find {selectedVehicle.label}</span>
+                <span>{t('bookNow')} ({selectedVehicle?.label})</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

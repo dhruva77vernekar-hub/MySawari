@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   MapPin, 
   Navigation, 
@@ -17,18 +17,30 @@ import {
 } from 'lucide-react';
 import { MOCK_LOCATIONS } from '../mock/mockData';
 import { useVehicle } from '../context/VehicleContext';
+import { useLanguage } from '../context/LanguageContext';
 import VehicleMorphCanvas from '../three/VehicleMorphCanvas';
 import api from '../services/api';
 
 export default function Book() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { vehicles, selectedVehicle, selectVehicleByCode } = useVehicle();
+  const { t } = useLanguage();
 
-  // Booking locations state
-  const [pickup, setPickup] = useState(MOCK_LOCATIONS[0].name);
-  const [drop, setDrop] = useState(MOCK_LOCATIONS[1].name);
+  // Booking locations state with state hydration
+  const [pickup, setPickup] = useState(location.state?.pickup || MOCK_LOCATIONS[0].name);
+  const [drop, setDrop] = useState(location.state?.drop || MOCK_LOCATIONS[1].name);
   const [isPickupDropdownOpen, setIsPickupDropdownOpen] = useState(false);
   const [isDropDropdownOpen, setIsDropDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.pickup) setPickup(location.state.pickup);
+    if (location.state?.drop) setDrop(location.state.drop);
+    const code = location.state?.vehicleCode || localStorage.getItem('mysawari_selected_vehicle');
+    if (code) {
+      selectVehicleByCode(code);
+    }
+  }, [location.state, selectVehicleByCode]);
 
   // AI Booking Prompt
   const [isAiMode, setIsAiMode] = useState(false);
