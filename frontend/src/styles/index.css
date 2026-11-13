@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #F1F0FA;
+  --color-surface: #FFFFFF;
+  --color-ink: #0A0A14;
+  --color-ink-2: #5B5B73;
+  --color-line: #DCDAF0;
+  --color-blue: #3A4DFF;
+  --color-cyan: #45E0F2;
+  --color-amber: #FFC21A;
+  --color-red: #EF2B3E;
+  --color-frost-1: #E9ECF2;
+  --color-frost-2: #C9CFDA;
+  --color-frost-3: #8E96A6;
+  --color-night: #0B0D14;
+
+  --font-sans: 'Instrument Sans Variable', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', monospace;
+  
+  --radius-pill: 999px;
+  --radius-card: 28px;
+  --radius-input: 16px;
+  --radius-chip: 10px;
+
+  --shadow-soft: 0 20px 60px -20px rgba(58, 77, 255, 0.25);
+}
+
+:root {
+  --bg: #F1F0FA;
+  --surface: #FFFFFF;
+  --ink: #0A0A14;
+  --ink-2: #5B5B73;
+  --line: #DCDAF0;
+  --blue: #3A4DFF;
+  --cyan: #45E0F2;
+  --amber: #FFC21A;
+  --red: #EF2B3E;
+  --frost-1: #E9ECF2;
+  --frost-2: #C9CFDA;
+  --frost-3: #8E96A6;
+  --night: #0B0D14;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.hud {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
