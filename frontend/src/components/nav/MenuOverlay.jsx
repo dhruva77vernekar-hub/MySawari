@@ -16,8 +16,7 @@ import {
   Clock, 
   Sparkles,
   Camera,
-  Share2,
-  ChevronRight
+  Share2
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -181,7 +180,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
             >
               <div className="flex items-center gap-4 min-w-0 pr-3">
                 <div className={`p-3 rounded-xl border ${item.iconBg} flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                  {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6" />}
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -199,7 +198,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
               </div>
 
               <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#3A4DFF] group-hover:border-[#3A4DFF] transition-all flex-shrink-0">
-                <ChevronRight className="w-4 h-4 text-[#8E96A6] group-hover:text-white" />
+                <ArrowRight className="w-4 h-4 text-[#8E96A6] group-hover:text-white" />
               </div>
             </button>
           );

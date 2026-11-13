@@ -127,6 +127,22 @@ export default function HeroStage() {
             </div>
           )}
 
+          {/* Comfort Special Alert Banner */}
+          {selectedVehicle?.code === 'comfort' && (
+            <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-400/15 to-transparent border border-amber-400/30 flex items-center justify-between text-left animate-fade-in shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">✨</span>
+                <div>
+                  <h4 className="text-xs font-bold text-[#0A0A14]">Comfort Sedan Selected · Extra Legroom & AC</h4>
+                  <p className="text-[10px] text-[#5B5B73]">Top rated Belagavi captains · Clean premium interior</p>
+                </div>
+              </div>
+              <span className="hud text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-black font-bold">
+                ₹65 BASE
+              </span>
+            </div>
+          )}
+
           {/* Pickup and Destination Input Card directly below the 3D slider */}
           <div className={`p-4 sm:p-6 rounded-[28px] bg-white border shadow-[0_25px_70px_-20px_rgba(58,77,255,0.22)] text-left space-y-4 transition-all ${
             isRickshaw ? 'border-[#F59E0B]/50 ring-2 ring-[#F59E0B]/20' : 'border-[#DCDAF0]'
