@@ -11,7 +11,7 @@ export const VEHICLE_DATA = [
   {
     id: 1,
     code: 'cab',
-    label: 'Cab',
+    label: 'Cab Sedan',
     tagline: 'Comfort & AC · 4 Seats',
     tag: 'COMFORT',
     seats: 4,
@@ -38,17 +38,59 @@ export const VEHICLE_DATA = [
   },
   {
     id: 3,
-    code: 'scooter',
-    label: 'Scooter / Auto',
-    tagline: 'Pocket-friendly · 2 Seats',
-    tag: 'CHEAPEST',
-    seats: 2,
+    code: 'auto',
+    label: 'Auto Rickshaw',
+    tagline: 'Iconic 3-Wheeler · 3 Seats',
+    tag: 'POPULAR',
+    seats: 3,
     baseFare: 30,
     perKm: 9,
     perMin: 0.8,
     minFare: 45,
     etaMin: 3,
-    color: '#45E0F2'
+    color: '#F59E0B'
+  },
+  {
+    id: 4,
+    code: 'scooter',
+    label: 'EV Scooter',
+    tagline: 'Green & Silent · 2 Seats',
+    tag: 'ECO EV',
+    seats: 2,
+    baseFare: 25,
+    perKm: 7,
+    perMin: 0.6,
+    minFare: 35,
+    etaMin: 3,
+    color: '#10B981'
+  },
+  {
+    id: 5,
+    code: 'suv',
+    label: 'SUV / XL',
+    tagline: 'Spacious & Luggage · 6 Seats',
+    tag: 'PREMIUM',
+    seats: 6,
+    baseFare: 70,
+    perKm: 18,
+    perMin: 2.0,
+    minFare: 120,
+    etaMin: 5,
+    color: '#8B5CF6'
+  },
+  {
+    id: 6,
+    code: 'shuttle',
+    label: 'Campus Shuttle',
+    tagline: 'Student Pool · 12 Seats',
+    tag: 'POOL',
+    seats: 12,
+    baseFare: 15,
+    perKm: 4,
+    perMin: 0.3,
+    minFare: 25,
+    etaMin: 6,
+    color: '#06B6D4'
   }
 ];
 
@@ -78,9 +120,19 @@ export const MOCK_CAPTAINS = [
     name: 'Praveen Kulkarni',
     rating: 4.75,
     trips: 980,
-    vehicleModel: 'Bajaj RE Auto',
+    vehicleModel: 'Bajaj RE Compact Auto',
     plateNumber: 'KA-22-A-3210',
     phone: '+91 99002 44556',
+    vehicleCode: 'auto'
+  },
+  {
+    id: 'c4',
+    name: 'Anand Hosur',
+    rating: 4.95,
+    trips: 640,
+    vehicleModel: 'Ather 450X EV',
+    plateNumber: 'KA-22-EV-1024',
+    phone: '+91 98860 11223',
     vehicleCode: 'scooter'
   }
 ];
@@ -102,7 +154,7 @@ export const MOCK_RIDE_HISTORY = [
     date: 'Yesterday, 6:40 PM',
     pickup: 'Bogarves Green Plaza',
     drop: 'Belagavi Railway Station',
-    vehicle: 'Cab',
+    vehicle: 'Cab Sedan',
     vehicleCode: 'cab',
     fare: 98,
     status: 'completed',
@@ -113,10 +165,10 @@ export const MOCK_RIDE_HISTORY = [
     date: '10 Nov 2026',
     pickup: 'VTU Campus',
     drop: 'KLE Tech Campus',
-    vehicle: 'Scooter / Auto',
-    vehicleCode: 'scooter',
+    vehicle: 'Auto Rickshaw',
+    vehicleCode: 'auto',
     fare: 55,
-    status: 'cancelled',
-    captain: null
+    status: 'completed',
+    captain: 'Praveen Kulkarni'
   }
 ];

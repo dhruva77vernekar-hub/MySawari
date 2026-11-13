@@ -23,35 +23,6 @@ export default function FloatingNav({ onOpenMenu }) {
         </span>
       </Link>
 
-      {/* Center Role Toggle for easy hackathon demo */}
-      <div className="pointer-events-auto hidden md:flex items-center gap-1 bg-white/70 backdrop-blur-md p-1.5 rounded-full border border-[#DCDAF0] text-xs">
-        <span className="hud px-2 text-[#8E96A6]">VIEW AS:</span>
-        <button
-          onClick={() => switchRole('rider')}
-          className={`px-3 py-1.5 rounded-full font-medium transition-all ${
-            role === 'rider' ? 'bg-[#0A0A14] text-white shadow-sm' : 'text-[#5B5B73] hover:text-[#0A0A14]'
-          }`}
-        >
-          Rider
-        </button>
-        <button
-          onClick={() => switchRole('captain')}
-          className={`px-3 py-1.5 rounded-full font-medium transition-all ${
-            role === 'captain' ? 'bg-[#3A4DFF] text-white shadow-sm' : 'text-[#5B5B73] hover:text-[#0A0A14]'
-          }`}
-        >
-          Captain
-        </button>
-        <button
-          onClick={() => switchRole('admin')}
-          className={`px-3 py-1.5 rounded-full font-medium transition-all ${
-            role === 'admin' ? 'bg-[#0B0D14] text-[#45E0F2] shadow-sm' : 'text-[#5B5B73] hover:text-[#0A0A14]'
-          }`}
-        >
-          Admin
-        </button>
-      </div>
-
       {/* Floating Action Pills */}
       <div className="pointer-events-auto flex items-center gap-2">
         {location.pathname !== '/book' && (

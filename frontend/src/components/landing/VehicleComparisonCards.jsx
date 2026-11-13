@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Users, Zap, Clock, ShieldCheck } from 'lucide-react';
+import { ArrowUpRight, Users, Zap, Clock } from 'lucide-react';
 import Card from '../ui/Card';
 import { useVehicle } from '../../context/VehicleContext';
 
@@ -18,18 +18,18 @@ export default function VehicleComparisonCards() {
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
           <span className="hud text-xs text-[#3A4DFF] tracking-widest block mb-2 font-semibold">
-            01 / LIVE FLEET OPTIONS
+            01 / LIVE MULTI-MODAL FLEET
           </span>
           <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.03em] text-[#0A0A14]">
-            Compare before you ride.
+            Compare 6 urban vehicle choices.
           </h2>
         </div>
         <p className="text-sm sm:text-base text-[#5B5B73] max-w-md">
-          Transparent, upfront fares with zero surge surprises. Select your ride to experience the real-time morph.
+          Transparent, upfront fares with zero surge surprises. Select any vehicle to trigger the physical particle morph.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {vehicles.map((v) => (
           <Card
             key={v.id}
@@ -75,9 +75,9 @@ export default function VehicleComparisonCards() {
 
             <div className="mt-8 pt-4 flex items-center justify-between">
               <div>
-                <span className="hud text-[10px] text-[#8E96A6] block">SAMPLE 3 KM TRIP</span>
+                <span className="hud text-[10px] text-[#8E96A6] block">SAMPLE 2.4 KM TRIP</span>
                 <span className="text-2xl font-bold text-[#0A0A14]">
-                  ₹{Math.round(v.baseFare + v.perKm * 3 + v.perMin * 8)}
+                  ₹{Math.max(v.minFare, Math.round(v.baseFare + v.perKm * 2.4 + v.perMin * 8))}
                 </span>
               </div>
 
