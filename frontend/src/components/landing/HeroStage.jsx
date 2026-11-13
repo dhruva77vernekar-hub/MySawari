@@ -76,15 +76,11 @@ export default function HeroStage() {
         />
       </div>
 
-      {/* Top HUD Row - Coordinates removed per user request */}
+      {/* Top HUD Row - Coordinates and backend tag removed per user request */}
       <div className="w-full max-w-7xl flex items-center justify-between text-xs text-[#5B5B73] z-10 pt-4">
         <div className="flex items-center gap-3">
           <span className="hud px-2.5 py-1 rounded-md bg-white/70 backdrop-blur-md border border-[#DCDAF0] text-[#3A4DFF] font-semibold">
             VEHICLE 0{currentIndex || 1}/0{vehicles.length} · {selectedVehicle?.label?.toUpperCase() || 'RIDE'}
-          </span>
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            BACKEND v3.0 LIVE :4000
           </span>
         </div>
 
@@ -100,9 +96,6 @@ export default function HeroStage() {
       <div className="relative w-full max-w-5xl my-auto flex flex-col items-center justify-center text-center z-10">
         {/* Headline */}
         <div className="space-y-2 mb-1 select-none">
-          <span className="hud text-xs md:text-sm text-[#3A4DFF] tracking-[0.2em] font-semibold uppercase">
-            {t('tagline')}
-          </span>
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-[-0.04em] text-[#0A0A14] leading-[0.98]">
             One tap. <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0A0A14] via-[#3A4DFF] to-[#0A0A14]">

@@ -16,7 +16,8 @@ import {
   Clock, 
   Sparkles,
   Camera,
-  Share2
+  Share2,
+  ChevronRight
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -94,57 +95,65 @@ export default function MenuOverlay({ isOpen, onClose }) {
     {
       id: 'buddy',
       title: t('rideBuddy'),
+      sub: 'Pool with Consent & Split Fare',
       desc: t('rideBuddyDesc'),
       icon: Users,
       badge: 'Split Fare',
-      color: 'from-blue-500/20 to-indigo-500/20 text-blue-400'
+      badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+      iconBg: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
     },
     {
       id: 'route',
       title: t('routeAssist'),
+      sub: 'Crowdsourced Road & Closure Alerts',
       desc: t('routeAssistDesc'),
       icon: AlertTriangle,
-      badge: 'Live Crowd Alerts',
-      color: 'from-amber-500/20 to-orange-500/20 text-amber-400'
+      badge: 'Live Reports',
+      badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      iconBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
     },
     {
       id: 'pass',
       title: t('ridePass'),
+      sub: 'Route Subscriptions & Passes',
       desc: t('ridePassDesc'),
       badge: 'Save 40%',
-      icon: CreditCard,
-      color: 'from-emerald-500/20 to-teal-500/20 text-emerald-400'
+      badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      iconBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
     },
     {
       id: 'lang',
       title: t('language'),
+      sub: 'English · ಕನ್ನಡ · हिंदी',
       desc: t('languageDesc'),
       badge: lang.toUpperCase(),
-      icon: Globe,
-      color: 'from-cyan-500/20 to-sky-500/20 text-cyan-400'
+      badgeColor: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+      iconBg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
     },
     {
       id: 'sos',
       title: t('sosSetup'),
+      sub: 'Pre-configure Contacts & Live GPS',
       desc: t('sosSetupDesc'),
       badge: 'Safety Pre-check',
-      icon: ShieldAlert,
-      color: 'from-rose-500/20 to-red-500/20 text-rose-400'
+      badgeColor: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+      iconBg: 'bg-rose-500/20 text-rose-400 border-rose-500/30'
     },
     {
       id: 'about',
       title: t('aboutMySawari'),
+      sub: 'Smart Mobility for Belagavi',
       desc: t('aboutDesc'),
       badge: 'Belagavi v3.0',
-      icon: Info,
-      color: 'from-violet-500/20 to-purple-500/20 text-violet-400'
+      badgeColor: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
+      iconBg: 'bg-violet-500/20 text-violet-400 border-violet-500/30'
     }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0A14]/95 backdrop-blur-2xl text-white flex flex-col justify-between p-6 md:p-12 overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-[#0A0A14]/96 backdrop-blur-2xl text-white flex flex-col justify-between p-4 sm:p-8 md:p-12 overflow-y-auto animate-fade-in">
       {/* Top Bar */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-5 max-w-5xl mx-auto w-full">
+      <div className="flex items-center justify-between border-b border-white/10 pb-5 max-w-2xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <span className="w-2.5 h-2.5 rounded-full bg-[#3A4DFF] animate-pulse" />
           <span className="hud text-xs text-[#C9CFDA] tracking-widest uppercase font-semibold">
@@ -153,57 +162,54 @@ export default function MenuOverlay({ isOpen, onClose }) {
         </div>
         <button
           onClick={onClose}
-          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white cursor-pointer"
           aria-label="Close menu"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Main 6 Menu Grid */}
-      <div className="max-w-5xl mx-auto w-full my-auto py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveModal(item.id)}
-                className="group p-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#3A4DFF]/50 transition-all text-left flex items-start justify-between relative overflow-hidden"
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${item.color} border border-white/10 flex-shrink-0`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl font-bold tracking-tight text-white group-hover:text-[#45E0F2] transition-colors">
-                        {item.title}
-                      </h3>
-                      {item.badge && (
-                        <span className="hud text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-white font-semibold">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#8E96A6] mt-1.5 leading-relaxed pr-2">
-                      {item.desc}
-                    </p>
-                  </div>
+      {/* Main Menu: One Below One (Single Column Stack) */}
+      <div className="max-w-2xl mx-auto w-full my-auto py-6 space-y-3">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveModal(item.id)}
+              className="group w-full p-4 sm:p-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#3A4DFF]/60 transition-all text-left flex items-center justify-between shadow-sm cursor-pointer hover:translate-x-1 duration-200"
+            >
+              <div className="flex items-center gap-4 min-w-0 pr-3">
+                <div className={`p-3 rounded-xl border ${item.iconBg} flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                  <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#3A4DFF] group-hover:border-[#3A4DFF] transition-all flex-shrink-0">
-                  <ArrowRight className="w-4 h-4 text-white" />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-[#45E0F2] transition-colors truncate">
+                      {item.title}
+                    </h3>
+                    <span className={`hud text-[9px] px-2 py-0.5 rounded-full border ${item.badgeColor} font-semibold`}>
+                      {item.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#8E96A6] mt-0.5 truncate sm:whitespace-normal leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
-              </button>
-            );
-          })}
-        </div>
+              </div>
+
+              <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#3A4DFF] group-hover:border-[#3A4DFF] transition-all flex-shrink-0">
+                <ChevronRight className="w-4 h-4 text-[#8E96A6] group-hover:text-white" />
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Footer Info */}
-      <div className="border-t border-white/10 pt-5 text-xs text-[#8E96A6] flex flex-col sm:flex-row items-center justify-between gap-3 max-w-5xl mx-auto w-full">
+      <div className="border-t border-white/10 pt-5 text-xs text-[#8E96A6] flex flex-col sm:flex-row items-center justify-between gap-3 max-w-2xl mx-auto w-full">
         <div>
-          <span className="text-white font-medium">MySawari</span> · Belagavi Smart Mobility Network
+          <span className="text-white font-medium">MySawari</span> · Belagavi Mobility Network
         </div>
         <div className="flex items-center gap-4">
           <span className="hover:text-white cursor-pointer" onClick={() => setActiveModal('lang')}>
@@ -222,7 +228,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-[#3A4DFF]/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -265,7 +271,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
               <span className="text-xs text-[#C9CFDA]">Accept Ride Buddy Requests</span>
               <button
                 onClick={() => setBuddyEnabled(!buddyEnabled)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${buddyEnabled ? 'bg-[#3A4DFF]' : 'bg-white/20'}`}
+                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${buddyEnabled ? 'bg-[#3A4DFF]' : 'bg-white/20'}`}
               >
                 <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${buddyEnabled ? 'right-0.5' : 'left-0.5'}`} />
               </button>
@@ -279,7 +285,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
                   setActiveModal(null);
                 }, 1800);
               }}
-              className="w-full py-3.5 rounded-xl bg-[#3A4DFF] hover:bg-[#3242E0] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#3A4DFF]/30"
+              className="w-full py-3.5 rounded-xl bg-[#3A4DFF] hover:bg-[#3242E0] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#3A4DFF]/30 cursor-pointer"
             >
               {buddyConfirmed ? (
                 <>
@@ -303,7 +309,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-amber-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -372,7 +378,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => setPreviewImage(null)}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
+                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -381,7 +387,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {reportSuccess ? (
                   <>
@@ -406,7 +412,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-emerald-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -443,7 +449,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setSelectedPass('daily')}
-                className={`p-3 rounded-2xl border text-center transition-all ${
+                className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                   selectedPass === 'daily'
                     ? 'bg-emerald-500/20 border-emerald-400 text-white'
                     : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
@@ -457,7 +463,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setSelectedPass('monthly')}
-                className={`p-3 rounded-2xl border text-center transition-all relative ${
+                className={`p-3 rounded-2xl border text-center transition-all relative cursor-pointer ${
                   selectedPass === 'monthly'
                     ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-500/10'
                     : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
@@ -474,7 +480,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setSelectedPass('yearly')}
-                className={`p-3 rounded-2xl border text-center transition-all ${
+                className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                   selectedPass === 'yearly'
                     ? 'bg-emerald-500/20 border-emerald-400 text-white'
                     : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
@@ -494,7 +500,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
                   setActiveModal(null);
                 }, 1800);
               }}
-              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 font-bold text-sm text-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 font-bold text-sm text-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
             >
               {passSubscribed ? (
                 <>
@@ -518,7 +524,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-cyan-500/40 rounded-3xl p-6 md:p-8 max-w-md w-full text-white shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -535,7 +541,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
             <div className="space-y-3 my-6">
               <button
                 onClick={() => { setLang('en'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'en'
                     ? 'bg-cyan-500/20 border-cyan-400 text-white'
                     : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
@@ -550,7 +556,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
               <button
                 onClick={() => { setLang('kn'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'kn'
                     ? 'bg-cyan-500/20 border-cyan-400 text-white'
                     : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
@@ -565,7 +571,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
               <button
                 onClick={() => { setLang('hi'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all ${
+                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'hi'
                     ? 'bg-cyan-500/20 border-cyan-400 text-white'
                     : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
@@ -581,7 +587,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
             <button
               onClick={() => setActiveModal(null)}
-              className="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm transition-all shadow-lg shadow-cyan-500/20"
+              className="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm transition-all shadow-lg shadow-cyan-500/20 cursor-pointer"
             >
               Apply Language ({lang.toUpperCase()})
             </button>
@@ -595,7 +601,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-rose-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -642,7 +648,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={() => setAutoShareGps(!autoShareGps)}
-                  className={`w-11 h-6 rounded-full transition-colors relative ${autoShareGps ? 'bg-rose-500' : 'bg-white/20'}`}
+                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${autoShareGps ? 'bg-rose-500' : 'bg-white/20'}`}
                 >
                   <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${autoShareGps ? 'right-1' : 'left-1'}`} />
                 </button>
@@ -657,7 +663,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
                   setActiveModal(null);
                 }, 1800);
               }}
-              className="w-full py-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 font-bold text-sm text-white flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-500/30"
+              className="w-full py-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 font-bold text-sm text-white flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-500/30 cursor-pointer"
             >
               {sosSaved ? (
                 <>
@@ -681,7 +687,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
           <div className="bg-[#121224] border border-violet-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -728,7 +734,7 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
             <button
               onClick={() => setActiveModal(null)}
-              className="mt-6 w-full py-3 rounded-xl bg-violet-500 hover:bg-violet-600 text-white font-bold text-xs transition-all"
+              className="mt-6 w-full py-3 rounded-xl bg-violet-500 hover:bg-violet-600 text-white font-bold text-xs transition-all cursor-pointer"
             >
               Close
             </button>

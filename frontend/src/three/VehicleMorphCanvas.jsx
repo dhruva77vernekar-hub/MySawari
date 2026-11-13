@@ -48,25 +48,25 @@ export default function VehicleMorphCanvas({ compact = false }) {
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 0.35, compact ? 5.8 : 5.2);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
+    camera.position.set(0, 0.15, compact ? 5.0 : 4.4);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
     // 2. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.6);
-    keyLight.position.set(3, 5, 4);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    keyLight.position.set(3, 6, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x3a4dff, 0.5);
-    fillLight.position.set(-4, -1, 2);
+    const fillLight = new THREE.DirectionalLight(0x3a4dff, 0.6);
+    fillLight.position.set(-4, -1, 3);
     scene.add(fillLight);
 
     // 3. Procedural Radial Soft Floor Shadow Texture
@@ -75,26 +75,28 @@ export default function VehicleMorphCanvas({ compact = false }) {
     shadowCanvas.height = 512;
     const sCtx = shadowCanvas.getContext('2d');
     const grad = sCtx.createRadialGradient(256, 256, 10, 256, 256, 250);
-    grad.addColorStop(0, 'rgba(10, 10, 20, 0.65)');
-    grad.addColorStop(0.35, 'rgba(15, 18, 35, 0.4)');
-    grad.addColorStop(0.7, 'rgba(20, 25, 45, 0.12)');
+    grad.addColorStop(0, 'rgba(10, 10, 20, 0.70)');
+    grad.addColorStop(0.35, 'rgba(15, 18, 35, 0.45)');
+    grad.addColorStop(0.7, 'rgba(20, 25, 45, 0.15)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     sCtx.fillStyle = grad;
     sCtx.fillRect(0, 0, 512, 512);
 
     const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
-    const shadowGeo = new THREE.PlaneGeometry(3.6, 1.6);
+    const shadowGeo = new THREE.PlaneGeometry(4.4, 1.6);
     const shadowMat = new THREE.MeshBasicMaterial({
       map: shadowTexture,
       transparent: true,
-      opacity: 0.75,
+      opacity: 0.8,
       depthWrite: false
     });
 
-    // 4. Vehicle Planes Setup
-    const spacing = 4.4;
+    // 4. Vehicle Planes Setup with 16:10 Widescreen Aspect (1280x800)
+    const spacing = 5.0;
     const textureLoader = new THREE.TextureLoader();
-    const planeGeo = new THREE.PlaneGeometry(compact ? 3.0 : 3.6, compact ? 3.0 : 3.6);
+    const planeWidth = compact ? 3.8 : 4.6;
+    const planeHeight = planeWidth / 1.6; // Matches 1280x800 texture aspect ratio perfectly
+    const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
 
     const vehicleGroups = [];
 
@@ -103,38 +105,44 @@ export default function VehicleMorphCanvas({ compact = false }) {
       group.position.x = (i - currentIndexRef.current) * spacing;
       group.position.y = 0.05;
 
-      // Primary Vehicle Plane
+      // Primary Vehicle Plane with crystal-clear mipmap filtering & anisotropy
       const texture = textureLoader.load(item.img, (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        if (renderer.capabilities?.getMaxAnisotropy) {
+          tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        }
       });
 
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        alphaTest: 0.01,
+        alphaTest: 0.005,
         side: THREE.DoubleSide
       });
 
       const mesh = new THREE.Mesh(planeGeo, material);
       group.add(mesh);
 
-      // Floor Shadow under vehicle
+      // Floor Shadow under vehicle tires
       const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
       shadowMesh.rotation.x = -Math.PI / 2;
-      shadowMesh.position.set(0, -1.25, 0);
+      shadowMesh.position.set(0, -planeHeight * 0.45, 0);
       group.add(shadowMesh);
 
       // Floor Inverted Reflection Plane
       const reflMat = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        opacity: 0.14,
+        opacity: 0.16,
         depthWrite: false,
         side: THREE.DoubleSide
       });
       const reflMesh = new THREE.Mesh(planeGeo, reflMat);
-      reflMesh.scale.y = -0.55;
-      reflMesh.position.set(0, -1.85, -0.05);
+      reflMesh.scale.y = -0.45;
+      reflMesh.position.set(0, -planeHeight * 0.72, -0.05);
       group.add(reflMesh);
 
       scene.add(group);
