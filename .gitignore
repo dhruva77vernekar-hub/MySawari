@@ -12,6 +12,7 @@ node_modules/
 dist/
 build/
 .cache/
+.vercel/
 
 # OS and system files
 .DS_Store

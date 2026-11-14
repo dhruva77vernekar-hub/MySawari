@@ -3,7 +3,9 @@
  * Seamless frontend integration for Razorpay Standard Checkout
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+  ? import.meta.env.VITE_API_URL
+  : (import.meta.env.DEV ? 'http://localhost:4000' : '');
 const DEFAULT_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TzfBO7UYhGdDs8';
 
 /**

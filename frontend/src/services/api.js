@@ -3,7 +3,9 @@
  * Connects frontend directly to the Express backend (v3.0) on port 4000.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+  ? import.meta.env.VITE_API_URL
+  : (import.meta.env.DEV ? 'http://localhost:4000' : '');
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('mysawari_token') || 'demo-rider-token';
