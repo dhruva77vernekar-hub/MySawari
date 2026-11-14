@@ -28,6 +28,7 @@ import api from '../services/api';
 import PaymentModal from '../components/payment/PaymentModal';
 import incidentService from '../services/incidentService';
 import ReportIncidentModal from '../components/modals/ReportIncidentModal';
+import AppDispatchView from '../components/booking/AppDispatchView';
 
 export default function Book() {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ export default function Book() {
   const [backendFare, setBackendFare] = useState(null);
   const [backendStatus, setBackendStatus] = useState('checking');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('app'); // 'app' (mobile dispatch map from screenshot) | 'studio'
 
   // Hydrate vehicle from navigation state
   useEffect(() => {
@@ -308,9 +310,72 @@ export default function Book() {
   };
 
   return (
-    <div className="relative w-full min-h-screen pt-24 pb-12 px-4 md:px-8 flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
-      {/* Left Panel: Booking Console */}
-      <div className="w-full md:w-[460px] bg-white rounded-[28px] border border-[#DCDAF0] p-6 shadow-[0_20px_60px_-20px_rgba(58,77,255,0.18)] flex flex-col justify-between z-10">
+    <div className="relative w-full min-h-screen pt-20 pb-12 px-3 sm:px-6 md:px-8 max-w-7xl mx-auto flex flex-col items-center">
+      {/* Top Experience View Switcher Bar */}
+      <div className="w-full flex items-center justify-between pb-4 max-w-4xl">
+        <div className="flex items-center gap-2">
+          <span className="hud text-[10px] text-[#3A4DFF] font-bold">BELAGAVI RIDE DISPATCH</span>
+          <span className="hud text-[9px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+            <span>15 SAWARIS ROAMING</span>
+          </span>
+        </div>
+
+        {/* View Toggle */}
+        <div className="flex items-center bg-[#F1F0FA] p-1 rounded-full border border-[#DCDAF0] text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => setViewMode('app')}
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+              viewMode === 'app' ? 'bg-[#3A4DFF] text-white shadow-xs' : 'text-[#5B5B73] hover:text-[#0A0A14]'
+            }`}
+          >
+            <span>📱 App Dispatch</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('studio')}
+            className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+              viewMode === 'studio' ? 'bg-[#3A4DFF] text-white shadow-xs' : 'text-[#5B5B73] hover:text-[#0A0A14]'
+            }`}
+          >
+            <span>💻 Studio 3D</span>
+          </button>
+        </div>
+      </div>
+
+      {viewMode === 'app' ? (
+        <div className="w-full max-w-4xl">
+          <AppDispatchView
+            pickup={pickup}
+            setPickup={setPickup}
+            pickupCoords={pickupCoords}
+            setPickupCoords={setPickupCoords}
+            drop={drop}
+            setDrop={setDrop}
+            dropCoords={dropCoords}
+            setDropCoords={setDropCoords}
+            routeCoordinates={routeCoordinates}
+            allRoutes={allRoutes}
+            routeType={routeType}
+            onSelectRouteType={handleRouteTypeChange}
+            distanceKm={distanceKm}
+            durationMin={durationMin}
+            vehicles={vehicles}
+            selectedVehicle={selectedVehicle}
+            onSelectVehicle={(v) => selectVehicleByCode(v.code)}
+            selectedFare={selectedFare}
+            incidents={incidents}
+            onConfirmRide={handleConfirmRide}
+            onOpenMenu={() => navigate('/rider')}
+            onToggleView={() => setViewMode('studio')}
+            onOpenAiBooking={() => setIsAiMode(true)}
+          />
+        </div>
+      ) : (
+        <div className="w-full flex flex-col md:flex-row gap-8">
+          {/* Left Panel: Booking Console */}
+          <div className="w-full md:w-[460px] bg-white rounded-[28px] border border-[#DCDAF0] p-6 shadow-[0_20px_60px_-20px_rgba(58,77,255,0.18)] flex flex-col justify-between z-10">
         <div>
           {/* Header & AI Toggle */}
           <div className="flex items-center justify-between pb-4 border-b border-[#DCDAF0]">
@@ -790,6 +855,8 @@ export default function Book() {
             onPickupChange={handleMapPickupChange}
             onDropChange={handleMapDropChange}
             height="420px"
+            showNearbyDrivers={true}
+            selectedVehicleType={selectedVehicle?.code}
           />
         </div>
 
@@ -808,6 +875,8 @@ export default function Book() {
           </div>
         </div>
       </div>
+    </div>
+  )}
 
       {/* Razorpay Payment Gateway Modal */}
       <PaymentModal

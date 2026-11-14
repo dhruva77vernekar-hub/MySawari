@@ -1,11 +1,96 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Navigation, MapPin, Locate, AlertCircle, RefreshCw, Layers, ShieldAlert, AlertTriangle, Flame } from 'lucide-react';
+import { Navigation, MapPin, Locate, AlertCircle, RefreshCw, Layers, ShieldAlert, AlertTriangle, Flame, Compass } from 'lucide-react';
 import routingService from '../../services/routingService';
+import { generateNearbyFleet, stepDriversPosition } from '../../services/nearbyDriversService';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
-const DEFAULT_BELAGAVI = { lng: 74.5089, lat: 15.8595, zoom: 13.5 };
+const DEFAULT_BELAGAVI = { lng: 74.5089, lat: 15.8595, zoom: 14 };
+
+/**
+ * High-fidelity top-down vehicle SVG renders matching real ride-hailing maps
+ */
+function getAutoSvg(heading = 0, isHighlighted = false) {
+  return `
+    <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transform: rotate(${heading}deg); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer;">
+      ${isHighlighted ? '<div style="position: absolute; inset: -4px; border-radius: 50%; background: rgba(245, 158, 11, 0.35); border: 1.5px solid #F59E0B; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>' : ''}
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.38));">
+        <!-- Front Wheel -->
+        <rect x="16.5" y="2" width="3" height="6" rx="1.5" fill="#0F172A"/>
+        <!-- Front Fender -->
+        <path d="M15 6L21 6L20 10L16 10Z" fill="#FBBF24"/>
+        <!-- Chassis Frame -->
+        <path d="M11 11C11 9.5 13 8 18 8C23 8 25 9.5 25 11L27 28C27 30 25.5 31.5 23 31.5H13C10.5 31.5 9 30 9 28L11 11Z" fill="#F59E0B" stroke="#B45309" stroke-width="0.8"/>
+        <!-- Front Windshield -->
+        <path d="M13.5 11.5H22.5L23.5 15H12.5L13.5 11.5Z" fill="#0F172A" opacity="0.85"/>
+        <!-- Yellow Canopy Roof -->
+        <rect x="11.5" y="15" width="13" height="15" rx="3" fill="#FBBF24"/>
+        <rect x="12.5" y="16" width="11" height="13" rx="2" fill="#F59E0B"/>
+        <!-- Star Badge on Canopy (matches screenshot) -->
+        <polygon points="18,17.5 19.3,21 23,21 20,23 21.2,26.5 18,24.5 14.8,26.5 16,23 13,21 16.7,21" fill="#FFFFFF"/>
+        <!-- Rear Wheels -->
+        <rect x="8" y="24" width="2" height="6" rx="1" fill="#0F172A"/>
+        <rect x="26" y="24" width="2" height="6" rx="1" fill="#0F172A"/>
+      </svg>
+    </div>
+  `;
+}
+
+function getCabSvg(heading = 0, isHighlighted = false) {
+  return `
+    <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; transform: rotate(${heading}deg); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer;">
+      ${isHighlighted ? '<div style="position: absolute; inset: -4px; border-radius: 50%; background: rgba(58, 77, 255, 0.35); border: 1.5px solid #3A4DFF; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>' : ''}
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.38));">
+        <!-- Wheels -->
+        <rect x="7" y="6" width="2" height="5" rx="1" fill="#0F172A"/>
+        <rect x="27" y="6" width="2" height="5" rx="1" fill="#0F172A"/>
+        <rect x="7" y="25" width="2" height="5" rx="1" fill="#0F172A"/>
+        <rect x="27" y="25" width="2" height="5" rx="1" fill="#0F172A"/>
+        <!-- Car Body (Bright Yellow Taxi) -->
+        <rect x="8.5" y="3" width="19" height="30" rx="5" fill="#FACC15" stroke="#CA8A04" stroke-width="0.8"/>
+        <!-- Front Windshield -->
+        <path d="M11 9H25L23.5 14H12.5L11 9Z" fill="#1E293B"/>
+        <!-- Roof Strip -->
+        <rect x="12" y="14" width="12" height="11" rx="1.5" fill="#EAB308"/>
+        <!-- White Taxi Cab Sign Strip -->
+        <rect x="14" y="17.5" width="8" height="3" rx="1" fill="#FFFFFF" stroke="#0F172A" stroke-width="0.5"/>
+        <!-- Rear Windshield -->
+        <path d="M12.5 25H23.5L25 28.5H11L12.5 25Z" fill="#1E293B"/>
+        <!-- Headlights -->
+        <circle cx="10.5" cy="4.5" r="1.2" fill="#FEF08A"/>
+        <circle cx="25.5" cy="4.5" r="1.2" fill="#FEF08A"/>
+        <!-- Taillights -->
+        <rect x="10" y="32" width="3" height="0.8" fill="#EF4444"/>
+        <rect x="23" y="32" width="3" height="0.8" fill="#EF4444"/>
+      </svg>
+    </div>
+  `;
+}
+
+function getMotoSvg(heading = 0, isHighlighted = false) {
+  return `
+    <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; transform: rotate(${heading}deg); transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer;">
+      ${isHighlighted ? '<div style="position: absolute; inset: -3px; border-radius: 50%; background: rgba(16, 185, 129, 0.35); border: 1.5px solid #10B981; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>' : ''}
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));">
+        <!-- Front Tire -->
+        <rect x="15.5" y="2" width="3" height="6.5" rx="1.5" fill="#0F172A"/>
+        <!-- Handlebars -->
+        <line x1="8" y1="8.5" x2="26" y2="8.5" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="8" cy="8.5" r="1.4" fill="#FACC15"/>
+        <circle cx="26" cy="8.5" r="1.4" fill="#FACC15"/>
+        <!-- Bike Chassis Body -->
+        <path d="M14 9H20L18.5 22H15.5L14 9Z" fill="#F59E0B" stroke="#B45309" stroke-width="0.8"/>
+        <!-- Rider Body -->
+        <ellipse cx="17" cy="16" rx="4.5" ry="3.2" fill="#2563EB"/>
+        <!-- Rider Helmet with Visor -->
+        <circle cx="17" cy="13" r="3.6" fill="#0F172A"/>
+        <path d="M14.8 11.8C15.4 11.2 16.2 11 17 11C17.8 11 18.6 11.2 19.2 11.8" stroke="#60A5FA" stroke-width="1.2" stroke-linecap="round"/>
+        <!-- Rear Tire -->
+        <rect x="15.5" y="24" width="3" height="7.5" rx="1.5" fill="#0F172A"/>
+      </svg>
+    </div>
+  `;
+}
 
 export default function MapIntegration({
   pickupLocation = null,
@@ -22,13 +107,19 @@ export default function MapIntegration({
   onDropChange = null,
   className = '',
   height = '420px',
-  showControls = true
+  showControls = true,
+  showNearbyDrivers = true,
+  selectedVehicleType = null,
+  pickupPulse = true,
+  onDriverClick = null,
+  onRecenter = null
 }) {
   const mapContainerRef = useRef(null);
   const leafletMapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [selectionMode, setSelectionMode] = useState(interactiveSelection);
+  const [nearbyFleet, setNearbyFleet] = useState([]);
 
   // Leaflet Layer / Marker References
   const layersRef = useRef({
@@ -40,6 +131,7 @@ export default function MapIntegration({
     dropMarker: null,
     userMarker: null,
     captainMarker: null,
+    driverMarkers: new Map(), // driverId -> L.marker
     incidentMarkers: []
   });
 
@@ -58,7 +150,7 @@ export default function MapIntegration({
 
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
-      zoom: 13,
+      zoom: 14,
       zoomControl: false,
       attributionControl: false
     });
@@ -103,7 +195,104 @@ export default function MapIntegration({
     };
   }, []);
 
-  // 2. Handle Map Clicks for Interactive Pickup / Drop Selection
+  // 2. Initialize and Seed Nearby Fleet around Pickup
+  useEffect(() => {
+    if (!mapLoaded) return;
+    const centerLat = pickupLocation?.lat || DEFAULT_BELAGAVI.lat;
+    const centerLng = pickupLocation?.lng || DEFAULT_BELAGAVI.lng;
+
+    const fleet = generateNearbyFleet(centerLat, centerLng, 15);
+    setNearbyFleet(fleet);
+  }, [mapLoaded, pickupLocation?.lat, pickupLocation?.lng]);
+
+  // 3. Smooth Micro-Roaming Driver Animation Loop
+  useEffect(() => {
+    if (!showNearbyDrivers || !mapLoaded || nearbyFleet.length === 0) return;
+
+    const centerLat = pickupLocation?.lat || DEFAULT_BELAGAVI.lat;
+    const centerLng = pickupLocation?.lng || DEFAULT_BELAGAVI.lng;
+
+    const interval = setInterval(() => {
+      setNearbyFleet((prevFleet) => {
+        return stepDriversPosition(prevFleet, centerLat, centerLng);
+      });
+    }, 2400);
+
+    return () => clearInterval(interval);
+  }, [showNearbyDrivers, mapLoaded, pickupLocation?.lat, pickupLocation?.lng, nearbyFleet.length]);
+
+  // 4. Render and Update Nearby Drivers on Leaflet Map
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const driverMarkers = layersRef.current.driverMarkers;
+
+    if (!showNearbyDrivers) {
+      driverMarkers.forEach((marker) => map.removeLayer(marker));
+      driverMarkers.clear();
+      return;
+    }
+
+    nearbyFleet.forEach((driver) => {
+      const isHighlighted = selectedVehicleType ? driver.type === selectedVehicleType : false;
+      
+      let html = '';
+      if (driver.type === 'auto') {
+        html = getAutoSvg(driver.heading, isHighlighted);
+      } else if (driver.type === 'cab') {
+        html = getCabSvg(driver.heading, isHighlighted);
+      } else {
+        html = getMotoSvg(driver.heading, isHighlighted);
+      }
+
+      const icon = L.divIcon({
+        className: `mysawari-driver-${driver.type}`,
+        html,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      if (driverMarkers.has(driver.id)) {
+        const marker = driverMarkers.get(driver.id);
+        marker.setLatLng([driver.lat, driver.lng]);
+        marker.setIcon(icon);
+      } else {
+        const marker = L.marker([driver.lat, driver.lng], { icon }).addTo(map);
+        
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; font-size: 11px; padding: 4px; line-height: 1.4;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <b style="color: #0A0A14;">${driver.label}</b>
+              <span style="background: #10B981; color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 8px;">${driver.rating} ★</span>
+            </div>
+            <div style="color: #5B5B73; margin-top: 2px;">Captain: <b>${driver.name}</b></div>
+            <div style="font-family: monospace; font-size: 10px; color: #3A4DFF; font-weight: bold;">${driver.plate}</div>
+            <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #E5E7EB; color: #10B981; font-weight: bold; font-size: 10px;">
+              ⚡ ~${driver.etaMin} min pickup arrival
+            </div>
+          </div>
+        `);
+
+        marker.on('click', () => {
+          onDriverClick?.(driver);
+        });
+
+        driverMarkers.set(driver.id, marker);
+      }
+    });
+
+    // Remove any markers no longer in fleet
+    const activeIds = new Set(nearbyFleet.map((d) => d.id));
+    driverMarkers.forEach((marker, id) => {
+      if (!activeIds.has(id)) {
+        map.removeLayer(marker);
+        driverMarkers.delete(id);
+      }
+    });
+  }, [mapLoaded, showNearbyDrivers, nearbyFleet, selectedVehicleType, onDriverClick]);
+
+  // 5. Handle Map Clicks for Interactive Pickup / Drop Selection
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map || !mapLoaded) return;
@@ -137,7 +326,7 @@ export default function MapIntegration({
     };
   }, [mapLoaded, selectionMode, onPickupChange, onDropChange, onLocationSelect]);
 
-  // 3. Render Route Polylines (Fastest, Shortest, Hazard-Free)
+  // 6. Render Route Polylines (Fastest, Shortest, Hazard-Free)
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map || !mapLoaded) return;
@@ -196,11 +385,11 @@ export default function MapIntegration({
 
       // Fit map bounds to show complete route
       const bounds = L.latLngBounds(latLngs);
-      map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+      map.fitBounds(bounds, { padding: [55, 55], maxZoom: 15 });
     }
   }, [mapLoaded, routeCoordinates, allRoutes, onSelectRouteType]);
 
-  // 4. Pickup Marker (Draggable)
+  // 7. Pickup Marker with Green Radar Pulse Ring (matching user's screenshot)
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map || !mapLoaded) return;
@@ -209,14 +398,20 @@ export default function MapIntegration({
 
     if (pickupLocation?.lat && pickupLocation?.lng) {
       const pickupIcon = L.divIcon({
-        className: 'mysawari-pickup-icon',
+        className: 'mysawari-pickup-radar-icon',
         html: `
-          <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.45)); transform: translate(-50%, -100%);">
-            <div style="background: #10B981; color: #FFFFFF; font-weight: 800; font-size: 11px; padding: 4px 8px; border-radius: 20px; border: 2px solid #FFFFFF; display: flex; align-items: center; gap: 4px; box-shadow: 0 3px 10px rgba(0,0,0,0.25); white-space: nowrap;">
-              <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #FFFFFF;"></span>
-              PICKUP
+          <div style="position: relative; width: 44px; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transform: translate(-50%, -100%); pointer-events: auto;">
+            <!-- Radar Pulsing Circle (matching screenshot) -->
+            <div style="position: absolute; top: 2px; width: 36px; height: 36px; border-radius: 50%; background: rgba(16, 185, 129, 0.28); border: 1.5px solid rgba(16, 185, 129, 0.6); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            
+            <!-- Green Central Target Pin -->
+            <div style="position: relative; z-index: 2; width: 22px; height: 22px; border-radius: 50%; background: #10B981; border: 3px solid #FFFFFF; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 6px; height: 6px; border-radius: 50%; background: #FFFFFF;"></div>
             </div>
-            <div style="width: 2px; height: 8px; background: #10B981;"></div>
+            
+            <!-- Dark Ground Stem -->
+            <div style="width: 2px; height: 16px; background: #0A0A14; border-radius: 1px; z-index: 1;"></div>
+            <div style="width: 6px; height: 2px; background: rgba(0,0,0,0.4); border-radius: 50%; filter: blur(0.5px);"></div>
           </div>
         `,
         iconSize: [0, 0]
@@ -248,7 +443,7 @@ export default function MapIntegration({
     }
   }, [mapLoaded, pickupLocation, onPickupChange]);
 
-  // 5. Drop Marker (Draggable)
+  // 8. Drop Marker (Draggable)
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map || !mapLoaded) return;
@@ -296,7 +491,7 @@ export default function MapIntegration({
     }
   }, [mapLoaded, dropLocation, onDropChange]);
 
-  // 6. Crowdsourced Hazard Incident Markers
+  // 9. Crowdsourced Hazard Incident Markers
   useEffect(() => {
     const map = leafletMapRef.current;
     if (!map || !mapLoaded) return;
@@ -330,7 +525,7 @@ export default function MapIntegration({
     }
   }, [mapLoaded, incidents]);
 
-  // 7. Recenter Map
+  // 10. Recenter Map
   const handleRecenter = () => {
     const map = leafletMapRef.current;
     if (!map) return;
@@ -340,9 +535,14 @@ export default function MapIntegration({
     } else if (userLocation) {
       map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
     } else {
-      map.setView([DEFAULT_BELAGAVI.lat, DEFAULT_BELAGAVI.lng], 13.5, { animate: true });
+      map.setView([DEFAULT_BELAGAVI.lat, DEFAULT_BELAGAVI.lng], 14, { animate: true });
     }
+    onRecenter?.();
   };
+
+  const autoCount = nearbyFleet.filter((d) => d.type === 'auto').length;
+  const cabCount = nearbyFleet.filter((d) => d.type === 'cab').length;
+  const motoCount = nearbyFleet.filter((d) => d.type === 'moto').length;
 
   return (
     <div
@@ -354,16 +554,24 @@ export default function MapIntegration({
 
       {/* Floating Status & Multi-Route Switcher Bar */}
       <div className="absolute top-3 left-3 right-3 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
           <span className="hud px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#DCDAF0] text-[#0A0A14] font-bold shadow-sm flex items-center gap-1.5 text-[10px]">
             <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-            <span>BELAGAVI LIVE ROUTING · OPENSTREETMAP</span>
+            <span>BELAGAVI LIVE FLEET · {nearbyFleet.length} SAWARIS NEARBY</span>
+          </span>
+
+          <span className="hud hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#DCDAF0] text-[9px] font-bold text-[#5B5B73]">
+            <span>🛺 {autoCount} Autos</span>
+            <span>·</span>
+            <span>🚗 {cabCount} Cabs</span>
+            <span>·</span>
+            <span>🛵 {motoCount} Bikes</span>
           </span>
 
           {incidents && incidents.length > 0 && (
             <span className="hud px-2.5 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 font-bold text-[9px] shadow-sm flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 text-amber-600" />
-              <span>{incidents.filter((i) => i.status === 'VERIFIED').length} ROAD HAZARDS</span>
+              <span>{incidents.filter((i) => i.status === 'VERIFIED').length} HAZARDS</span>
             </span>
           )}
         </div>
@@ -421,15 +629,17 @@ export default function MapIntegration({
         </div>
       )}
 
-      {/* Floating Recenter in bottom corner */}
+      {/* Floating Recenter in bottom corner matching screenshot style */}
       <div className="absolute bottom-4 right-4 z-[400] flex flex-col gap-2">
         <button
           type="button"
           onClick={handleRecenter}
           title="Return to My Location"
-          className="w-10 h-10 rounded-full bg-white/95 hover:bg-white text-[#0A0A14] border border-[#DCDAF0] shadow-md flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          className="w-11 h-11 rounded-full bg-white hover:bg-[#F8F9FD] text-[#0A0A14] border border-[#DCDAF0] shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
-          <Locate className="w-5 h-5 text-[#3A4DFF]" />
+          <div className="w-6 h-6 rounded-full border-2 border-[#3A4DFF] flex items-center justify-center">
+            <div className="w-2 h-2 rounded-full bg-[#3A4DFF]" />
+          </div>
         </button>
       </div>
     </div>
