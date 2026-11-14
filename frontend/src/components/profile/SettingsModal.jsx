@@ -25,6 +25,9 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [fullName, setFullName] = useState(user?.fullName || 'Dhruv Patil');
   const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
   const [email, setEmail] = useState(user?.email || 'dhruv@mysawari.app');
+  const [emergencyContact, setEmergencyContact] = useState(
+    user?.emergencyContact || localStorage.getItem('mysawari_emergency_contact') || '+91 94481 23456'
+  );
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Shortcut add state
@@ -38,7 +41,7 @@ export default function SettingsModal({ isOpen, onClose }) {
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
-    updateProfile({ fullName, phone, email });
+    updateProfile({ fullName, phone, email, emergencyContact });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
   };
@@ -149,6 +152,24 @@ export default function SettingsModal({ isOpen, onClose }) {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 px-4 bg-[#F1F0FA] rounded-2xl border border-transparent focus:border-[#3A4DFF] focus:bg-white outline-none text-sm font-medium text-[#0A0A14]"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-rose-600 mb-1.5 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                  Emergency SOS Contact Phone
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={emergencyContact}
+                  onChange={(e) => setEmergencyContact(e.target.value)}
+                  placeholder="+91 94481 23456"
+                  className="w-full h-12 px-4 bg-[#F1F0FA] rounded-2xl border border-transparent focus:border-rose-500 focus:bg-white outline-none text-sm font-medium text-[#0A0A14]"
+                />
+                <span className="text-[10px] text-[#8E96A6] block mt-1">
+                  1-tap SOS on the home screen immediately dispatches your live GPS location & urgent alert message to this number.
+                </span>
               </div>
 
               <div className="pt-2 flex items-center justify-between">

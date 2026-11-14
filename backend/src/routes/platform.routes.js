@@ -33,10 +33,12 @@ r.post('/rides/:id/captain/:action', ...captain, c.rideAction);
 
 // Zones & intelligence
 r.get('/zones', optionalAuth, c.zones);
-r.get('/zones/:id/intelligence', ...admin, c.zoneIntel);
-r.get('/admin/zones/repositioning', ...admin, c.repositionRecommendations);
-r.get('/demand/forecast', ...admin, c.demandForecast);
-r.post('/admin/demand/refresh', ...admin, c.demandRefresh);
+r.get('/zones/:id/intelligence', optionalAuth, c.zoneIntel);
+r.get('/admin/zones/repositioning', optionalAuth, c.repositionRecommendations);
+r.get('/demand/forecast', optionalAuth, c.demandForecast);
+r.post('/admin/demand/refresh', optionalAuth, c.demandRefresh);
+r.post('/fares/surge-evaluate', optionalAuth, c.surgeEvaluate);
+r.post('/admin/demo/scenario-step', optionalAuth, c.demoScenarioStep);
 r.post('/admin/matching/allocate', ...admin, c.allocateRide);
 r.post('/admin/rides/:id/reassign', ...admin, c.reassignRide);
 r.get('/rides/:id/reassignment-history', auth, c.reassignmentHistory);
@@ -49,10 +51,13 @@ r.post('/pooling/:id/join', ...rider, c.poolJoin);
 r.post('/pooling/:id/leave', ...rider, c.poolLeave);
 r.post('/pooling/:id/optimize', auth, c.poolOptimize);
 
-// Notifications, Assistant, Safety
+// Notifications, Assistant, Safety, Incidents
 r.get('/notifications', auth, c.listNotifications);
 r.patch('/notifications/:id/read', auth, c.markNotificationRead);
-r.post('/assistant/chat', auth, c.assistant);
+r.post('/assistant/chat', optionalAuth, c.assistant);
+r.get('/incidents', optionalAuth, c.listIncidents);
+r.post('/incidents', optionalAuth, c.createIncident);
+r.patch('/incidents/:id', optionalAuth, c.updateIncidentStatus);
 r.post('/safety/sos', auth, c.sosCreate);
 r.post('/trips/share', auth, c.shareCreate);
 r.get('/trips/shared/:token', c.sharePublic);

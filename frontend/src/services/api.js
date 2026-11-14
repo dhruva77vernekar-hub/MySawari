@@ -146,6 +146,149 @@ export const api = {
       console.warn('Failed to load nearby captains:', e.message);
       return [];
     }
+  },
+
+  // Zone Intelligence & Surge Multipliers
+  async getZones() {
+    try {
+      return await request('/api/zones');
+    } catch (e) {
+      console.warn('Failed to load zones:', e.message);
+      return [];
+    }
+  },
+
+  // Predictive Demand Forecasting
+  async getDemandForecast(params = {}) {
+    try {
+      const query = new URLSearchParams(params).toString();
+      return await request(`/api/demand/forecast${query ? `?${query}` : ''}`);
+    } catch (e) {
+      console.warn('Failed to load demand forecast:', e.message);
+      return null;
+    }
+  },
+
+  // Proactive Repositioning Recommendations
+  async getRepositioningRecommendations() {
+    try {
+      return await request('/api/admin/zones/repositioning');
+    } catch (e) {
+      console.warn('Failed to load repositioning recommendations:', e.message);
+      return { recommendations: [] };
+    }
+  },
+
+  // Dynamic Surge Multiplier Evaluator
+  async evaluateSurge(payload) {
+    try {
+      return await request('/api/fares/surge-evaluate', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('Failed to evaluate surge:', e.message);
+      return null;
+    }
+  },
+
+  // Demand & Zone Intelligence Scenario Demonstration
+  async stepDemoScenario(step = 1) {
+    try {
+      return await request('/api/admin/demo/scenario-step', {
+        method: 'POST',
+        body: JSON.stringify({ step })
+      });
+    } catch (e) {
+      console.warn('Failed to step demo scenario:', e.message);
+      return null;
+    }
+  },
+
+  // ==========================================
+  // REAL SOS EMERGENCY & CONTACTS APIS
+  // ==========================================
+  async getEmergencyContacts() {
+    try {
+      const res = await request('/api/emergency/contacts');
+      return res?.contacts || [];
+    } catch (e) {
+      console.warn('Failed to load emergency contacts:', e.message);
+      return [];
+    }
+  },
+
+  async addEmergencyContact(contactData) {
+    return await request('/api/emergency/contacts', {
+      method: 'POST',
+      body: JSON.stringify(contactData)
+    });
+  },
+
+  async updateEmergencyContact(contactId, updates) {
+    return await request(`/api/emergency/contacts/${contactId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  },
+
+  async deleteEmergencyContact(contactId) {
+    return await request(`/api/emergency/contacts/${contactId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async sendContactOtp(contactId) {
+    return await request(`/api/emergency/contacts/${contactId}/send-otp`, {
+      method: 'POST'
+    });
+  },
+
+  async verifyContactOtp(contactId, otp) {
+    return await request(`/api/emergency/contacts/${contactId}/verify-otp`, {
+      method: 'POST',
+      body: JSON.stringify({ otp })
+    });
+  },
+
+  async triggerSos(alertData) {
+    return await request('/api/sos/trigger', {
+      method: 'POST',
+      body: JSON.stringify(alertData)
+    });
+  },
+
+  async getSosIncident(incidentId) {
+    return await request(`/api/sos/incidents/${incidentId}`);
+  },
+
+  async getAdminSosIncidents() {
+    try {
+      const res = await request('/api/admin/sos/incidents');
+      return res?.incidents || [];
+    } catch (e) {
+      console.warn('Failed to load admin SOS incidents:', e.message);
+      return [];
+    }
+  },
+
+  async acknowledgeSosIncident(incidentId) {
+    return await request(`/api/admin/sos/incidents/${incidentId}/acknowledge`, {
+      method: 'POST'
+    });
+  },
+
+  async resolveSosIncident(incidentId, notes = '') {
+    return await request(`/api/admin/sos/incidents/${incidentId}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    });
+  },
+
+  async retrySosNotification(notificationId) {
+    return await request(`/api/admin/sos/notifications/${notificationId}/retry`, {
+      method: 'POST'
+    });
   }
 };
 

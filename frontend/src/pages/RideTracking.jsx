@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   CheckCircle2, 
   Clock, 
@@ -12,26 +12,109 @@ import {
   ArrowLeft,
   X,
   Play,
-  Coins
+  Coins,
+  Navigation,
+  CreditCard,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 import Card from '../components/ui/Card';
-import { MOCK_CAPTAINS } from '../mock/mockData';
+import MapIntegration from '../components/map/MapIntegration';
+import PaymentModal from '../components/payment/PaymentModal';
+import SosActivationModal from '../components/safety/SosActivationModal';
+import EmergencyContactsModal from '../components/safety/EmergencyContactsModal';
+import realtimeService from '../services/realtimeService';
+import routingService from '../services/routingService';
+import { MOCK_CAPTAINS, MOCK_LOCATIONS } from '../mock/mockData';
 import { useVehicle } from '../context/VehicleContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function RideTracking() {
   const navigate = useNavigate();
-  const { selectedVehicle } = useVehicle();
+  const location = useLocation();
+  const { selectedVehicle: contextVehicle } = useVehicle();
   const { addCoins } = useAuth();
-  const captain = MOCK_CAPTAINS[0]; // Suresh Patil (Bike Captain)
+  const captain = MOCK_CAPTAINS[0]; // Suresh Patil
 
-  // Ride lifecycle state: 'requested' | 'accepted' | 'arriving' | 'in_progress' | 'completed' | 'cancelled'
+  // Read location state passed from booking
+  const pickupName = location.state?.pickup || MOCK_LOCATIONS[0].name;
+  const dropName = location.state?.drop || MOCK_LOCATIONS[1].name;
+  const pickupCoords = location.state?.pickupCoords || {
+    lat: MOCK_LOCATIONS[0].lat,
+    lng: MOCK_LOCATIONS[0].lng,
+    name: pickupName
+  };
+  const dropCoords = location.state?.dropCoords || {
+    lat: MOCK_LOCATIONS[1].lat,
+    lng: MOCK_LOCATIONS[1].lng,
+    name: dropName
+  };
+
+  const initialRouteCoords = location.state?.routeCoordinates || [];
+  const chosenVehicle = location.state?.selectedVehicle || contextVehicle;
+  const initialFare = location.state?.fare || 65;
+  const initialPaymentData = location.state?.paymentData || null;
+  const initialPaymentStatus = location.state?.paymentStatus || (initialPaymentData?.status === 'captured' ? 'paid' : 'cash');
+  const rideOtp = location.state?.otp || localStorage.getItem('mysawari_active_otp') || '4829';
+
+  // Active state
+  const [routeCoordinates, setRouteCoordinates] = useState(initialRouteCoords);
   const [status, setStatus] = useState('accepted');
   const [eta, setEta] = useState(3);
   const [shareCopied, setShareCopied] = useState(false);
   const [sosActive, setSosActive] = useState(false);
   const [rating, setRating] = useState(5);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [paymentData, setPaymentData] = useState(initialPaymentData);
+  const [paymentStatus, setPaymentStatus] = useState(initialPaymentStatus);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [showSosModal, setShowSosModal] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const fare = initialFare;
+
+  // Captain Live GPS coordinates
+  const [captainLocation, setCaptainLocation] = useState({
+    lat: pickupCoords.lat - 0.004,
+    lng: pickupCoords.lng - 0.003,
+    heading: 45,
+    name: captain.name,
+    vehicleCode: chosenVehicle?.code || 'auto'
+  });
+
+  // Fetch route coordinates if not already passed
+  useEffect(() => {
+    let mounted = true;
+    if (routeCoordinates.length === 0) {
+      routingService.getRoute(pickupCoords, dropCoords).then((res) => {
+        if (mounted && res?.coordinates) {
+          setRouteCoordinates(res.coordinates);
+        }
+      });
+    }
+    return () => { mounted = false; };
+  }, [pickupCoords, dropCoords, routeCoordinates.length]);
+
+  // Realtime Supabase Subscription & Simulated GPS Movement
+  useEffect(() => {
+    const sub = realtimeService.subscribeToRide(
+      'live-trip-demo',
+      routeCoordinates,
+      (newLoc) => {
+        setCaptainLocation((prev) => ({
+          ...prev,
+          ...newLoc,
+          vehicleCode: chosenVehicle?.code || 'auto'
+        }));
+      },
+      (newStatus) => {
+        setStatus(newStatus);
+      }
+    );
+
+    return () => {
+      sub.unsubscribe();
+    };
+  }, [routeCoordinates, chosenVehicle]);
 
   // Simulation steps for demo
   const steps = [
@@ -46,13 +129,33 @@ export default function RideTracking() {
 
   const handleNextStep = () => {
     if (status === 'requested') setStatus('accepted');
-    else if (status === 'accepted') setStatus('arriving');
-    else if (status === 'arriving') {
+    else if (status === 'accepted') {
+      setStatus('arriving');
+      setEta(2);
+    } else if (status === 'arriving') {
       setStatus('in_progress');
-      setEta(8);
+      setEta(7);
+      // Teleport captain along the main route
+      if (routeCoordinates.length > 2) {
+        const midPoint = routeCoordinates[Math.floor(routeCoordinates.length / 2)];
+        setCaptainLocation((prev) => ({
+          ...prev,
+          lng: midPoint[0],
+          lat: midPoint[1],
+          heading: 65
+        }));
+      }
     } else if (status === 'in_progress') {
       setStatus('completed');
+      setEta(0);
       addCoins?.(10);
+      if (dropCoords) {
+        setCaptainLocation((prev) => ({
+          ...prev,
+          lng: dropCoords.lng,
+          lat: dropCoords.lat
+        }));
+      }
     }
   };
 
@@ -63,6 +166,7 @@ export default function RideTracking() {
   };
 
   const handleTriggerSos = () => {
+    setShowSosModal(true);
     setSosActive(true);
   };
 
@@ -72,7 +176,7 @@ export default function RideTracking() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#DCDAF0] gap-4">
         <button
           onClick={() => navigate('/book')}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[#5B5B73] hover:text-[#0A0A14]"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-[#5B5B73] hover:text-[#0A0A14] cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Booking
         </button>
@@ -83,7 +187,7 @@ export default function RideTracking() {
           {status !== 'completed' && status !== 'cancelled' ? (
             <button
               onClick={handleNextStep}
-              className="px-3 py-1 bg-[#3A4DFF] text-white font-semibold rounded-full hover:bg-[#2c3be0] flex items-center gap-1 transition-colors"
+              className="px-3 py-1 bg-[#3A4DFF] text-white font-semibold rounded-full hover:bg-[#2c3be0] flex items-center gap-1 transition-colors cursor-pointer"
             >
               <Play className="w-3 h-3 fill-white" />
               <span>Advance to Next Step</span>
@@ -91,7 +195,7 @@ export default function RideTracking() {
           ) : (
             <button
               onClick={() => setStatus('accepted')}
-              className="px-3 py-1 bg-[#0A0A14] text-white font-semibold rounded-full"
+              className="px-3 py-1 bg-[#0A0A14] text-white font-semibold rounded-full cursor-pointer"
             >
               Reset Ride
             </button>
@@ -111,7 +215,7 @@ export default function RideTracking() {
           </div>
           <button
             onClick={() => setSosActive(false)}
-            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs"
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs cursor-pointer"
           >
             Dismiss
           </button>
@@ -120,35 +224,29 @@ export default function RideTracking() {
 
       {/* Main Tracking Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Map & Route */}
+        {/* Left 2 Cols: Live Mapbox Tracking & Timeline */}
         <div className="md:col-span-2 space-y-6">
-          {/* Simulated Live Route Map */}
-          <div className="w-full h-80 rounded-[28px] overflow-hidden border border-[#DCDAF0] bg-[#E9ECF2] relative flex flex-col justify-between p-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#E9ECF2] to-[#C9CFDA] opacity-80" />
-            
-            {/* Live GPS Beacon Marker */}
-            <div className="relative z-10 flex items-center justify-between">
-              <span className="hud bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-[#0A0A14] shadow-sm">
-                LIVE GPS TRACKING · BELAGAVI
-              </span>
-              <span className="bg-[#3A4DFF] text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md">
-                <Clock className="w-3.5 h-3.5" /> ETA {eta} MIN
-              </span>
-            </div>
+          {/* Live Mapbox Map with Captain Movement */}
+          <div className="relative w-full rounded-[28px] overflow-hidden border border-[#DCDAF0] shadow-sm">
+            <MapIntegration
+              pickupLocation={pickupCoords}
+              dropLocation={dropCoords}
+              routeCoordinates={routeCoordinates}
+              captainLocation={captainLocation}
+              height="380px"
+            />
 
-            {/* Route illustration */}
-            <div className="relative z-10 my-auto text-center space-y-1">
-              <span className="w-4 h-4 rounded-full bg-[#3A4DFF] inline-block animate-ping" />
-              <p className="hud text-xs text-[#0A0A14] font-bold">
-                {status === 'accepted' ? 'CAPTAIN ON THE WAY TO KLE TECH' : status === 'in_progress' ? 'EN ROUTE TO CHENNAMMA CIRCLE' : 'TRIP COMPLETED'}
-              </p>
-            </div>
-
-            {/* Bottom Pickup to Drop bar */}
-            <div className="relative z-10 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-[#DCDAF0] flex items-center justify-between text-xs">
-              <span className="font-medium text-[#0A0A14]">KLE Tech Campus</span>
-              <span className="text-[#3A4DFF] font-bold">→</span>
-              <span className="font-medium text-[#0A0A14]">Rani Chennamma Circle</span>
+            {/* Live GPS Status Overlay Badge */}
+            <div className="absolute bottom-4 left-4 z-10 bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-[#DCDAF0] shadow-md flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <div>
+                <p className="hud text-[10px] font-bold text-[#0A0A14]">
+                  {status === 'accepted' ? 'CAPTAIN DISPATCHED' : status === 'arriving' ? 'CAPTAIN ARRIVING' : status === 'in_progress' ? 'EN ROUTE TO DESTINATION' : 'TRIP COMPLETED'}
+                </p>
+                <p className="text-[10px] text-[#5B5B73]">
+                  ETA ~{eta} MIN · Speed ~{captainLocation.speed || 32} km/h
+                </p>
+              </div>
             </div>
           </div>
 
@@ -190,6 +288,26 @@ export default function RideTracking() {
 
         {/* Right Col: Captain Card, Safety Panel, Completion Rating */}
         <div className="space-y-6">
+          {/* RIDE START OTP CARD */}
+          <div className="p-4 bg-gradient-to-r from-[#3A4DFF]/10 via-[#3A4DFF]/5 to-white border border-[#3A4DFF]/30 rounded-2xl flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#3A4DFF] text-white flex items-center justify-center font-bold shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="hud text-[10px] text-[#3A4DFF] font-bold block tracking-wider">
+                  RIDE START OTP
+                </span>
+                <p className="text-xs text-[#5B5B73]">
+                  Share with Captain {captain.name.split(' ')[0]} to verify ride
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white px-3.5 py-1.5 rounded-xl border border-[#3A4DFF]/40 shadow-xs">
+              <span className="font-mono text-xl font-black tracking-widest text-[#0A0A14]">{rideOtp}</span>
+            </div>
+          </div>
+
           {/* Captain Profile Card */}
           <Card className="p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -200,100 +318,191 @@ export default function RideTracking() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-[#E9ECF2] border border-[#DCDAF0] flex items-center justify-center font-bold text-lg text-[#0A0A14]">
+              <div className="w-16 h-16 rounded-full bg-[#0A0A14] text-white flex items-center justify-center text-xl font-bold shadow-md">
                 SP
               </div>
               <div>
-                <h4 className="font-bold text-base text-[#0A0A14]">{captain.name}</h4>
-                <div className="flex items-center gap-1 text-xs text-[#5B5B73]">
-                  <Star className="w-3.5 h-3.5 fill-[#FFC21A] text-[#FFC21A]" />
-                  <span className="font-bold text-[#0A0A14]">{captain.rating}</span>
-                  <span>({captain.trips} trips)</span>
+                <h3 className="font-bold text-lg text-[#0A0A14]">{captain.name}</h3>
+                <div className="flex items-center gap-1.5 text-xs text-[#5B5B73]">
+                  <span className="flex items-center text-amber-500 font-bold">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 mr-1" />
+                    {captain.rating}
+                  </span>
+                  <span>· {captain.trips} trips</span>
                 </div>
+                <p className="text-xs font-mono font-semibold text-[#3A4DFF] mt-0.5">
+                  {captain.plate}
+                </p>
               </div>
             </div>
 
-            <div className="p-3 bg-[#F1F0FA] rounded-2xl text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-[#5B5B73]">Vehicle</span>
-                <span className="font-semibold text-[#0A0A14]">{captain.vehicleModel}</span>
+            <div className="p-3 bg-[#F1F0FA] rounded-2xl flex items-center justify-between text-xs">
+              <div>
+                <span className="text-[#5B5B73] block text-[10px]">VEHICLE</span>
+                <span className="font-bold text-[#0A0A14]">{chosenVehicle?.label || captain.vehicleModel}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#5B5B73]">Registration</span>
-                <span className="font-mono font-bold text-[#3A4DFF]">{captain.plateNumber}</span>
+              <div className="text-right">
+                <span className="text-[#5B5B73] block text-[10px]">VERIFICATION CODE</span>
+                <span className="hud font-bold text-sm text-[#3A4DFF] bg-white px-2.5 py-0.5 rounded-lg border border-[#DCDAF0]">
+                  OTP: {rideOtp}
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            {/* Payment Status & Pay Now Online for COD */}
+            <div className="p-3.5 bg-white border border-[#DCDAF0] rounded-2xl text-xs space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-[#3A4DFF]" />
+                  <div>
+                    <span className="text-[#5B5B73] block text-[10px]">PAYMENT METHOD</span>
+                    <span className="font-bold text-[#0A0A14]">
+                      {paymentStatus === 'paid' ? 'Paid Online via Razorpay' : 'Cash on Arrival (COD)'}
+                    </span>
+                  </div>
+                </div>
+                <span className={`hud text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                }`}>
+                  {paymentStatus === 'paid' ? 'CAPTURED' : `₹${fare} DUE`}
+                </span>
+              </div>
+
+              {/* Pay Now Online Option for COD users during ride */}
+              {paymentStatus !== 'paid' && (
+                <div className="p-3 bg-gradient-to-r from-[#3A4DFF]/10 via-[#3A4DFF]/5 to-transparent border border-[#3A4DFF]/25 rounded-xl space-y-1.5 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold text-[#0A0A14]">Want to switch to online payment?</p>
+                    <span className="hud text-[9px] text-[#3A4DFF] font-bold">UPI · GPay · Cards</span>
+                  </div>
+                  <p className="text-[10px] text-[#5B5B73]">
+                    Pay the ₹{fare} fare digitally right now and skip cash change hassle at destination.
+                  </p>
+                  <button
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    className="w-full py-2 bg-[#3A4DFF] hover:bg-[#2b3cee] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-white" />
+                    <span>Pay ₹{fare} Online Now</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex gap-3">
               <a
                 href={`tel:${captain.phone}`}
-                className="flex-1 py-3 rounded-full bg-[#0A0A14] hover:bg-[#3A4DFF] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 py-3 bg-[#0A0A14] hover:bg-black text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all"
               >
-                <Phone className="w-3.5 h-3.5" /> Call Captain
+                <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Call Captain</span>
               </a>
-            </div>
-          </Card>
 
-          {/* Safety Panel (Section 4 & 10) */}
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#3A4DFF]" />
-              <span className="hud text-xs text-[#0A0A14] font-bold">IN-TRIP SAFETY PANEL</span>
-            </div>
-            <p className="text-xs text-[#5B5B73]">
-              Share live trip GPS tracking with family or friends for peace of mind.
-            </p>
-
-            <div className="space-y-2">
               <button
                 onClick={handleShareTrip}
-                className="w-full py-2.5 rounded-xl border border-[#DCDAF0] hover:bg-[#F1F0FA] text-[#0A0A14] text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                className="px-4 py-3 bg-white hover:bg-[#F1F0FA] text-[#0A0A14] border border-[#DCDAF0] rounded-full text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                title="Share Trip Link"
               >
-                <Share2 className="w-3.5 h-3.5 text-[#3A4DFF]" />
-                <span>{shareCopied ? 'Link Copied to Clipboard!' : 'Share Live Tracking Link'}</span>
-              </button>
-
-              <button
-                onClick={handleTriggerSos}
-                className="w-full py-2.5 rounded-xl bg-[#EF2B3E] hover:bg-[#d41c2e] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>EMERGENCY SOS</span>
+                <Share2 className="w-4 h-4 text-[#3A4DFF]" />
+                <span>{shareCopied ? 'Copied!' : 'Share'}</span>
               </button>
             </div>
           </Card>
 
-          {/* Completed State Rating Box */}
-          {status === 'completed' && (
-            <Card className="p-6 bg-white border-[#3A4DFF] ring-2 ring-[#3A4DFF]/20 space-y-4 animate-fade-in">
-              <div className="text-center space-y-1">
-                <span className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-6 h-6" />
-                </span>
-                <h4 className="font-bold text-lg text-[#0A0A14]">Ride Completed!</h4>
-                <p className="text-2xl font-bold font-mono text-[#0A0A14]">₹35.00</p>
-                <span className="hud text-[10px] text-[#5B5B73]">PAID VIA CASH / UPI</span>
+          {/* Safety & SOS Module */}
+          <Card className="p-6 space-y-4 border-l-4 border-l-[#EF2B3E]">
+            <div className="flex items-center gap-2 text-[#EF2B3E]">
+              <ShieldCheck className="w-5 h-5" />
+              <h4 className="font-bold text-sm text-[#0A0A14]">Belagavi Ride Guard</h4>
+            </div>
+            <p className="text-xs text-[#5B5B73] leading-relaxed">
+              Your route is actively GPS monitored by MySawari safety algorithms. In case of unexpected detour or emergency, tap SOS immediately.
+            </p>
+            <button
+              onClick={handleTriggerSos}
+              className="w-full py-3 bg-[#EF2B3E] hover:bg-[#d82234] text-white rounded-full text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <AlertTriangle className="w-4 h-4 fill-white" />
+              <span>TRIGGER EMERGENCY SOS</span>
+            </button>
 
-                {/* Coins reward badge */}
-                <div className="mt-2 p-2 bg-[#FFC21A]/20 border border-[#FFC21A] rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold text-[#0A0A14]">
-                  <span>🪙</span>
-                  <span>+10 MySawari Coins Credited!</span>
-                </div>
+            <button
+              onClick={() => setShowContactsModal(true)}
+              className="w-full py-2 bg-white hover:bg-[#F1F0FA] text-[#3A4DFF] border border-[#DCDAF0] rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-[#3A4DFF]" />
+              <span>Manage Emergency Contacts (SMS & WhatsApp)</span>
+            </button>
+          </Card>
+
+          {/* Post-Ride Rating Card when Completed */}
+          {status === 'completed' && (
+            <Card className="p-6 space-y-4 bg-gradient-to-br from-emerald-50 to-white border-emerald-200 animate-fade-in">
+              <div className="flex items-center gap-2 text-emerald-700">
+                <CheckCircle2 className="w-5 h-5" />
+                <h4 className="font-bold text-sm">Trip Completed Successfully!</h4>
               </div>
 
+              {/* Coins Earned Banner */}
+              <div className="p-3 bg-amber-100/70 border border-amber-300 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🪙</span>
+                  <div>
+                    <h5 className="text-xs font-bold text-amber-900">+10 MySawari Coins Earned!</h5>
+                    <p className="text-[10px] text-amber-700">Usable for next ride discount</p>
+                  </div>
+                </div>
+                <span className="hud text-xs font-bold text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full">
+                  REWARD
+                </span>
+              </div>
+
+              {/* Payment Receipt / Pay Online via Razorpay */}
+              {paymentStatus === 'paid' ? (
+                <div className="p-3.5 bg-white border border-emerald-200 rounded-2xl space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="hud text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> RAZORPAY PAYMENT CAPTURED
+                    </span>
+                    <span className="font-mono font-bold text-[#0A0A14]">₹{fare}</span>
+                  </div>
+                  <div className="font-mono text-[10px] text-[#5B5B73] space-y-0.5">
+                    <p>Payment ID: <span className="text-[#0A0A14] font-semibold">{paymentData?.paymentId || 'pay_rzp_live'}</span></p>
+                    <p>Order ID: <span className="truncate block">{paymentData?.orderId || 'order_rzp_live'}</span></p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#0A0A14] font-bold">Fare Payable: ₹{fare}</span>
+                    <span className="hud text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold">CASH PENDING</span>
+                  </div>
+                  <p className="text-[11px] text-[#5B5B73]">Pay effortlessly online using UPI, Google Pay or Card via Razorpay.</p>
+                  <button
+                    onClick={() => setIsPaymentModalOpen(true)}
+                    className="w-full py-2.5 bg-[#3A4DFF] hover:bg-[#2b3cee] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-white" />
+                    <span>Pay ₹{fare} Online via Razorpay</span>
+                  </button>
+                </div>
+              )}
+
               {!ratingSubmitted ? (
-                <div className="space-y-3 pt-2">
-                  <p className="text-xs text-center text-[#5B5B73]">Rate Captain Suresh</p>
-                  <div className="flex justify-center gap-2">
+                <div className="space-y-3">
+                  <p className="text-xs text-[#5B5B73]">How was your ride with {captain.name}?</p>
+                  <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         onClick={() => setRating(star)}
-                        className="p-1 hover:scale-125 transition-transform"
+                        className="p-1 cursor-pointer"
                       >
                         <Star
                           className={`w-6 h-6 ${
-                            star <= rating ? 'fill-[#FFC21A] text-[#FFC21A]' : 'text-[#DCDAF0]'
+                            star <= rating
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'text-gray-300'
                           }`}
                         />
                       </button>
@@ -301,20 +510,52 @@ export default function RideTracking() {
                   </div>
                   <button
                     onClick={() => setRatingSubmitted(true)}
-                    className="w-full py-2.5 rounded-full bg-[#0A0A14] text-white text-xs font-bold"
+                    className="w-full py-2.5 bg-[#0A0A14] text-white rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer"
                   >
                     Submit Rating
                   </button>
                 </div>
               ) : (
-                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs text-center font-medium">
-                  Thank you! Rating recorded.
-                </div>
+                <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" /> Thank you for rating {rating} stars!
+                </p>
               )}
             </Card>
           )}
         </div>
       </div>
+
+      {/* Razorpay Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        amount={fare}
+        rideDetails={{ pickup: pickupName, drop: dropName }}
+        onPaymentSuccess={(data) => {
+          setPaymentStatus('paid');
+          setPaymentData(data);
+        }}
+      />
+
+      {/* Real SOS Emergency Activation Modal (SMS & WhatsApp ONLY) */}
+      <SosActivationModal
+        isOpen={showSosModal}
+        onClose={() => setShowSosModal(false)}
+        ride={{
+          id: 'RIDE-BEL-802',
+          pickupLocation: { name: pickupName },
+          dropLocation: { name: dropName },
+          customerName: 'Dhruv Patil',
+          captain: { name: captain.name, vehicleNumber: captain.vehicleNumber || 'KA-22-EZ-4091' }
+        }}
+        currentLocation={{ latitude: pickupCoords.lat, longitude: pickupCoords.lng }}
+      />
+
+      {/* Emergency Contacts Management Modal */}
+      <EmergencyContactsModal
+        isOpen={showContactsModal}
+        onClose={() => setShowContactsModal(false)}
+      />
     </div>
   );
 }

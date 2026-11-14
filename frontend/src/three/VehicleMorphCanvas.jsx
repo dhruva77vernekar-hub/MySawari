@@ -1,21 +1,20 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useVehicle } from '../context/VehicleContext';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
 
 const VEHICLES = [
-  { code: 'cab', label: 'Cab Sedan', color: '#3A4DFF', img: '/vehicles/cab.png', tag: 'POPULAR', baseFare: '₹50' },
-  { code: 'comfort', label: 'Comfort Sedan', color: '#EAB308', img: '/vehicles/comfort.png', tag: 'PREMIUM', baseFare: '₹65' },
-  { code: 'xl', label: 'SUV / XL', color: '#8B5CF6', img: '/vehicles/xl.png', tag: 'EXTRA ROOM', baseFare: '₹75' },
-  { code: 'auto', label: 'Auto Rickshaw', color: '#F59E0B', img: '/vehicles/auto.png', tag: 'FASTEST PICKUP', baseFare: '₹30' },
-  { code: 'bike', label: 'Bike Taxi', color: '#10B981', img: '/vehicles/bike.png', tag: 'POCKET FRIENDLY', baseFare: '₹20' }
+  { code: 'cab', label: 'Cab Sedan', color: '#3A4DFF', img: '/vehicles/cab.png', tag: 'ALL-ELECTRIC', baseFare: '₹50', specs: '4 Seats · AC' },
+  { code: 'comfort', label: 'Comfort Sedan', color: '#EAB308', img: '/vehicles/comfort.png', tag: 'PREMIUM LUXURY', baseFare: '₹65', specs: 'Top Rated · Extra Legroom' },
+  { code: 'xl', label: 'SUV / XL', color: '#8B5CF6', img: '/vehicles/xl.png', tag: 'SPACIOUS 6-SEATER', baseFare: '₹75', specs: '6 Seats · Big Luggage' },
+  { code: 'auto', label: 'Auto Rickshaw', color: '#F59E0B', img: '/vehicles/auto.png', tag: 'FASTEST PICKUP', baseFare: '₹30', specs: '3 Seats · Metered' },
+  { code: 'bike', label: 'Bike Taxi', color: '#10B981', img: '/vehicles/bike.png', tag: 'POCKET FRIENDLY', baseFare: '₹20', specs: '1 Helmet · Zero Traffic' }
 ];
 
 export default function VehicleMorphCanvas({ compact = false }) {
   const mountRef = useRef(null);
   const { selectedVehicle, selectVehicleByCode } = useVehicle();
 
-  // Find index from selected vehicle
   const getIndexFromCode = (code) => {
     const idx = VEHICLES.findIndex((v) => v.code === code);
     return idx >= 0 ? idx : 0;
@@ -45,58 +44,122 @@ export default function VehicleMorphCanvas({ compact = false }) {
     if (!container) return;
 
     let width = container.clientWidth || 800;
-    let height = container.clientHeight || (compact ? 340 : 520);
+    let height = container.clientHeight || (compact ? 340 : 500);
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 0.18, compact ? 5.0 : 4.5);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    camera.position.set(0, 0.22, compact ? 5.2 : 4.6);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true, 
+      alpha: true, 
+      powerPreference: 'high-performance' 
+    });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
-    // 2. High-End Studio Lighting for Vivid Contrast
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
+    // 2. High-End Showroom Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.4);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(3, 6, 5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
+    keyLight.position.set(4, 7, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x3a4dff, 0.5);
-    fillLight.position.set(-4, -1, 3);
-    scene.add(fillLight);
+    const rimLight = new THREE.DirectionalLight(0x3a4dff, 0.9);
+    rimLight.position.set(-5, 1, 4);
+    scene.add(rimLight);
 
-    // 3. Procedural Radial Soft Floor Shadow Texture
+    const warmFill = new THREE.DirectionalLight(0xfff3d6, 0.6);
+    warmFill.position.set(0, -3, 3);
+    scene.add(warmFill);
+
+    // 3. Procedural Contact Shadow Texture
     const shadowCanvas = document.createElement('canvas');
     shadowCanvas.width = 512;
     shadowCanvas.height = 512;
     const sCtx = shadowCanvas.getContext('2d');
-    const grad = sCtx.createRadialGradient(256, 256, 10, 256, 256, 250);
-    grad.addColorStop(0, 'rgba(10, 10, 20, 0.72)');
-    grad.addColorStop(0.35, 'rgba(15, 18, 35, 0.42)');
-    grad.addColorStop(0.7, 'rgba(20, 25, 45, 0.14)');
+    const grad = sCtx.createRadialGradient(256, 256, 15, 256, 256, 240);
+    grad.addColorStop(0, 'rgba(10, 10, 22, 0.85)');
+    grad.addColorStop(0.35, 'rgba(15, 18, 38, 0.52)');
+    grad.addColorStop(0.7, 'rgba(20, 25, 48, 0.18)');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     sCtx.fillStyle = grad;
     sCtx.fillRect(0, 0, 512, 512);
 
     const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
-    const shadowGeo = new THREE.PlaneGeometry(4.6, 1.6);
+    const shadowGeo = new THREE.PlaneGeometry(4.8, 1.8);
     const shadowMat = new THREE.MeshBasicMaterial({
       map: shadowTexture,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.85,
       depthWrite: false
     });
 
-    // 4. Vehicle Planes Setup with 16:10 Widescreen Aspect (1280x800)
+    // 4. Procedural Glowing Stage Ring (Pedestal)
+    const ringCanvas = document.createElement('canvas');
+    ringCanvas.width = 512;
+    ringCanvas.height = 512;
+    const rCtx = ringCanvas.getContext('2d');
+    const rGrad = rCtx.createRadialGradient(256, 256, 120, 256, 256, 250);
+    rGrad.addColorStop(0, 'rgba(58, 77, 255, 0)');
+    rGrad.addColorStop(0.5, 'rgba(58, 77, 255, 0.18)');
+    rGrad.addColorStop(0.85, 'rgba(58, 77, 255, 0.45)');
+    rGrad.addColorStop(0.95, 'rgba(255, 255, 255, 0.85)');
+    rGrad.addColorStop(1, 'rgba(58, 77, 255, 0)');
+    rCtx.fillStyle = rGrad;
+    rCtx.fillRect(0, 0, 512, 512);
+
+    const ringTexture = new THREE.CanvasTexture(ringCanvas);
+    const ringGeo = new THREE.PlaneGeometry(5.2, 5.2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      map: ringTexture,
+      transparent: true,
+      opacity: 0.7,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const stageRing = new THREE.Mesh(ringGeo, ringMat);
+    stageRing.rotation.x = -Math.PI / 2;
+    stageRing.position.set(0, -1.18, 0);
+    scene.add(stageRing);
+
+    // 5. 3D Floating Dust / Sparkle Particles
+    const particleCount = 45;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleVelocities = [];
+
+    for (let p = 0; p < particleCount; p++) {
+      particlePositions[p * 3] = (Math.random() - 0.5) * 6.5;
+      particlePositions[p * 3 + 1] = (Math.random() - 0.5) * 2.8;
+      particlePositions[p * 3 + 2] = (Math.random() - 0.5) * 3.5;
+      particleVelocities.push({
+        y: 0.003 + Math.random() * 0.006,
+        x: (Math.random() - 0.5) * 0.003,
+        rot: Math.random() * 0.02
+      });
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x9fb4ff,
+      size: 0.05,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending
+    });
+    const particleSystem = new THREE.Points(particleGeo, particleMat);
+    scene.add(particleSystem);
+
+    // 6. Vehicle Planes Setup (16:10 aspect ratio 1280x800)
     const spacing = 5.2;
     const textureLoader = new THREE.TextureLoader();
-    const planeWidth = compact ? 3.8 : 4.6;
-    const planeHeight = planeWidth / 1.6; // Matches 1280x800 texture aspect ratio perfectly
+    const planeWidth = compact ? 4.0 : 4.8;
+    const planeHeight = planeWidth / 1.6; // Exactly 1.6 aspect ratio
     const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight);
 
     const vehicleGroups = [];
@@ -104,9 +167,9 @@ export default function VehicleMorphCanvas({ compact = false }) {
     VEHICLES.forEach((item, i) => {
       const group = new THREE.Group();
       group.position.x = (i - currentIndexRef.current) * spacing;
-      group.position.y = 0.05;
+      group.position.y = 0.08;
 
-      // Primary Vehicle Plane with crystal-clear mipmap filtering & anisotropy
+      // Primary Vehicle Plane
       const texture = textureLoader.load(item.img, (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.generateMipmaps = true;
@@ -120,7 +183,7 @@ export default function VehicleMorphCanvas({ compact = false }) {
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        alphaTest: 0.005,
+        alphaTest: 0.002,
         side: THREE.DoubleSide
       });
 
@@ -128,7 +191,7 @@ export default function VehicleMorphCanvas({ compact = false }) {
       mesh.userData = { vehicleIndex: i };
       group.add(mesh);
 
-      // Floor Shadow under vehicle tires
+      // Floor Shadow
       const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
       shadowMesh.rotation.x = -Math.PI / 2;
       shadowMesh.position.set(0, -planeHeight * 0.44, 0);
@@ -138,20 +201,20 @@ export default function VehicleMorphCanvas({ compact = false }) {
       const reflMat = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        opacity: 0.16,
+        opacity: 0.18,
         depthWrite: false,
         side: THREE.DoubleSide
       });
       const reflMesh = new THREE.Mesh(planeGeo, reflMat);
-      reflMesh.scale.y = -0.45;
+      reflMesh.scale.y = -0.42;
       reflMesh.position.set(0, -planeHeight * 0.72, -0.05);
       group.add(reflMesh);
 
       scene.add(group);
-      vehicleGroups.push({ group, mesh, shadowMesh, reflMesh, index: i });
+      vehicleGroups.push({ group, mesh, shadowMesh, reflMesh, index: i, item });
     });
 
-    // 5. Interactive Animation State
+    // 7. Interactive Physics & Animation State
     let targetProgress = currentIndexRef.current;
     let currentProgress = currentIndexRef.current;
     let isDragging = false;
@@ -162,17 +225,14 @@ export default function VehicleMorphCanvas({ compact = false }) {
     let lastDragTime = performance.now();
     let totalDragDistance = 0;
 
-    // Mouse tilt tracking
     let mouseNormX = 0;
     let mouseNormY = 0;
     let currentTiltX = 0;
     let currentTiltY = 0;
 
-    // Raycaster for clicking side vehicles to slide to them
     const raycaster = new THREE.Raycaster();
     const mouseVector = new THREE.Vector2();
 
-    // Pointer events for ultra-smooth drag/swipe
     const onPointerDown = (e) => {
       isDragging = true;
       pointerStartX = e.clientX;
@@ -204,21 +264,20 @@ export default function VehicleMorphCanvas({ compact = false }) {
       lastDragX = e.clientX;
       lastDragTime = now;
 
-      // Smooth resistance at boundaries
       let newTarget = dragProgressStart - deltaX;
-      if (newTarget < 0) newTarget = newTarget * 0.3;
+      if (newTarget < 0) newTarget = newTarget * 0.28;
       if (newTarget > VEHICLES.length - 1) {
-        newTarget = (VEHICLES.length - 1) + (newTarget - (VEHICLES.length - 1)) * 0.3;
+        newTarget = (VEHICLES.length - 1) + (newTarget - (VEHICLES.length - 1)) * 0.28;
       }
       targetProgress = newTarget;
     };
 
-    const onPointerUp = (e) => {
+    const onPointerUp = () => {
       if (!isDragging) return;
       isDragging = false;
       container.style.cursor = 'grab';
 
-      // If user barely moved cursor, treat as a tap/click to select clicked vehicle
+      // Tap-to-select clicked vehicle if user barely dragged
       if (totalDragDistance < 8) {
         raycaster.setFromCamera(mouseVector, camera);
         const meshes = vehicleGroups.map(v => v.mesh);
@@ -234,15 +293,15 @@ export default function VehicleMorphCanvas({ compact = false }) {
         }
       }
 
-      // Snap with momentum / velocity
-      let snapIndex = Math.round(targetProgress - dragVelocity * 5.5);
+      // Smooth inertia snap
+      let snapIndex = Math.round(targetProgress - dragVelocity * 6.0);
       snapIndex = Math.max(0, Math.min(VEHICLES.length - 1, snapIndex));
       targetProgress = snapIndex;
       setCurrentIndex(snapIndex);
       selectVehicleByCode(VEHICLES[snapIndex].code);
     };
 
-    // Wheel scroll support (horizontal and vertical gestures)
+    // Wheel gesture support
     let wheelTimeout;
     const onWheel = (e) => {
       e.preventDefault();
@@ -257,7 +316,7 @@ export default function VehicleMorphCanvas({ compact = false }) {
           setCurrentIndex(snap);
           selectVehicleByCode(VEHICLES[snap].code);
         }
-      }, 150);
+      }, 140);
     };
 
     container.addEventListener('pointerdown', onPointerDown);
@@ -265,18 +324,17 @@ export default function VehicleMorphCanvas({ compact = false }) {
     window.addEventListener('pointerup', onPointerUp);
     container.addEventListener('wheel', onWheel, { passive: false });
 
-    // Resize handler
     const onResize = () => {
       if (!container) return;
       width = container.clientWidth;
-      height = container.clientHeight || (compact ? 340 : 520);
+      height = container.clientHeight || (compact ? 340 : 500);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
     };
     window.addEventListener('resize', onResize);
 
-    // 6. Animation Loop
+    // 8. 3D Animation Loop
     let animId;
     let lastTime = performance.now();
 
@@ -286,47 +344,70 @@ export default function VehicleMorphCanvas({ compact = false }) {
       const now = performance.now();
       const deltaSec = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
+      const elapsedTime = now * 0.001;
 
-      // Sync targetProgress with external index when not dragging
       if (!isDragging && Math.abs(targetProgress - currentIndexRef.current) > 0.01 && totalDragDistance === 0) {
         targetProgress = currentIndexRef.current;
       }
 
-      // Smooth lerp progress towards target (spring physics)
-      const lerpSpeed = isDragging ? 16 : 8.5;
+      // Smooth spring lerp
+      const lerpSpeed = isDragging ? 18 : 9.5;
       const progressDiff = targetProgress - currentProgress;
       currentProgress += progressDiff * Math.min(1, deltaSec * lerpSpeed);
 
-      // Swing rotation velocity while sliding
-      const currentVel = progressDiff * 4.0;
-      const swingYaw = THREE.MathUtils.clamp(-currentVel * 0.32, -0.42, 0.42);
-      const swingRoll = THREE.MathUtils.clamp(-currentVel * 0.12, -0.16, 0.16);
+      // Swing dynamics
+      const currentVel = progressDiff * 4.5;
+      const swingYaw = THREE.MathUtils.clamp(-currentVel * 0.35, -0.45, 0.45);
+      const swingRoll = THREE.MathUtils.clamp(-currentVel * 0.14, -0.18, 0.18);
 
-      // Mouse tilt smooth lerp
-      currentTiltX += (mouseNormY * 0.10 - currentTiltX) * 0.08;
-      currentTiltY += (mouseNormX * 0.16 - currentTiltY) * 0.08;
+      // Mouse tilt with spring inertia
+      currentTiltX += (mouseNormY * 0.12 - currentTiltX) * 0.09;
+      currentTiltY += (mouseNormX * 0.18 - currentTiltY) * 0.09;
 
-      // Update vehicle positions and rotations
+      // Rotate stage ring
+      stageRing.rotation.z = elapsedTime * 0.15;
+      const ringPulse = 0.65 + Math.sin(elapsedTime * 2.5) * 0.12;
+      stageRing.material.opacity = ringPulse;
+
+      // Animate floating dust particles
+      const posAttr = particleGeo.attributes.position;
+      for (let p = 0; p < particleCount; p++) {
+        let py = posAttr.getY(p) + particleVelocities[p].y;
+        if (py > 2.2) py = -1.2;
+        posAttr.setY(p, py);
+        posAttr.setX(p, posAttr.getX(p) + particleVelocities[p].x);
+      }
+      posAttr.needsUpdate = true;
+
+      // Update vehicle groups
       vehicleGroups.forEach(({ group, mesh, shadowMesh, index }) => {
         const offset = index - currentProgress;
         group.position.x = offset * spacing;
 
-        // Depth and scale based on distance from center
         const absOffset = Math.abs(offset);
-        const scale = THREE.MathUtils.lerp(1.0, 0.70, Math.min(1, absOffset));
+        const scale = THREE.MathUtils.lerp(1.0, 0.68, Math.min(1, absOffset));
         group.scale.set(scale, scale, scale);
 
-        // Parabolic curve in Z axis for 3D stage depth
-        group.position.z = -Math.pow(absOffset, 1.35) * 1.9;
+        // Parabolic 3D stage depth curve
+        group.position.z = -Math.pow(absOffset, 1.35) * 2.1;
 
-        // Mesh rotations: tilt + swing + resting angle
+        // Subtle 3D levitation breathing on active vehicle
+        const hoverFloat = absOffset < 0.8 ? Math.sin(elapsedTime * 2.2 + index) * 0.035 : 0;
+        group.position.y = 0.08 + hoverFloat;
+
+        // 3D Rotations
         mesh.rotation.y = swingYaw + (absOffset < 0.6 ? currentTiltY : 0);
         mesh.rotation.x = currentTiltX * (1 - Math.min(1, absOffset));
         mesh.rotation.z = swingRoll;
 
-        // Shadow follows opacity & scale
-        const shadowOpacity = THREE.MathUtils.lerp(0.8, 0.2, Math.min(1, absOffset));
+        // Shadow follows vehicle depth
+        const shadowOpacity = THREE.MathUtils.lerp(0.85, 0.18, Math.min(1, absOffset));
         shadowMesh.material.opacity = shadowOpacity;
+        shadowMesh.scale.set(
+          THREE.MathUtils.lerp(1.0, 0.7, absOffset),
+          THREE.MathUtils.lerp(1.0, 0.7, absOffset),
+          1.0
+        );
       });
 
       renderer.render(scene, camera);
@@ -355,48 +436,48 @@ export default function VehicleMorphCanvas({ compact = false }) {
 
   return (
     <div className="relative w-full flex flex-col items-center select-none">
-      {/* 3D WebGL Canvas Container with Left/Right Click Nav Hints */}
+      {/* 3D WebGL Canvas Container with Left/Right Nav Arrows */}
       <div className="w-full relative flex items-center justify-center">
-        {/* Left Click Slider Arrow */}
+        {/* Left Arrow */}
         <button
           onClick={() => slideTo(currentIndex - 1)}
           disabled={currentIndex === 0}
-          className="absolute left-2 sm:left-6 z-20 w-11 h-11 rounded-full bg-white/80 hover:bg-white backdrop-blur-md border border-[#DCDAF0] shadow-md flex items-center justify-center text-[#0A0A14] disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          className="absolute left-2 sm:left-6 z-20 w-12 h-12 rounded-full bg-white/85 hover:bg-white backdrop-blur-md border border-[#DCDAF0] shadow-lg flex items-center justify-center text-[#0A0A14] disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 cursor-pointer group"
           aria-label="Previous Vehicle"
         >
-          <ChevronLeft className="w-5 h-5 text-[#3A4DFF]" />
+          <ChevronLeft className="w-6 h-6 text-[#3A4DFF] transition-transform group-hover:-translate-x-0.5" />
         </button>
 
-        {/* The 3D Slider Canvas */}
+        {/* 3D WebGL Canvas */}
         <div 
           ref={mountRef} 
-          className="w-full h-[320px] sm:h-[400px] md:h-[480px] cursor-grab active:cursor-grabbing touch-pan-y relative"
+          className="w-full h-[340px] sm:h-[420px] md:h-[500px] cursor-grab active:cursor-grabbing touch-pan-y relative"
         />
 
-        {/* Right Click Slider Arrow */}
+        {/* Right Arrow */}
         <button
           onClick={() => slideTo(currentIndex + 1)}
           disabled={currentIndex === VEHICLES.length - 1}
-          className="absolute right-2 sm:right-6 z-20 w-11 h-11 rounded-full bg-white/80 hover:bg-white backdrop-blur-md border border-[#DCDAF0] shadow-md flex items-center justify-center text-[#0A0A14] disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          className="absolute right-2 sm:right-6 z-20 w-12 h-12 rounded-full bg-white/85 hover:bg-white backdrop-blur-md border border-[#DCDAF0] shadow-lg flex items-center justify-center text-[#0A0A14] disabled:opacity-20 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95 cursor-pointer group"
           aria-label="Next Vehicle"
         >
-          <ChevronRight className="w-5 h-5 text-[#3A4DFF]" />
+          <ChevronRight className="w-6 h-6 text-[#3A4DFF] transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
 
-      {/* Sleek Floating Slide Indicator (No button bar: Slide smoothly to select) */}
-      <div className="flex flex-col items-center gap-2 z-10 -mt-3">
-        {/* 5 Minimalist Slide Position Dots */}
-        <div className="flex items-center gap-2 p-1.5 px-3 rounded-full bg-white/80 backdrop-blur-md border border-[#DCDAF0] shadow-xs">
+      {/* Futuristic Vehicle HUD & Navigation Bar */}
+      <div className="flex flex-col items-center gap-2.5 z-10 -mt-2">
+        {/* Sleek Vehicle Position Indicator Dots */}
+        <div className="flex items-center gap-2 p-1.5 px-3.5 rounded-full bg-white/85 backdrop-blur-md border border-[#DCDAF0] shadow-sm">
           {VEHICLES.map((v, idx) => {
             const isActive = idx === currentIndex;
             return (
               <button
                 key={v.code}
                 onClick={() => slideTo(idx)}
-                className={`transition-all rounded-full cursor-pointer ${
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
                   isActive
-                    ? 'w-6 h-2 bg-[#0A0A14]'
+                    ? 'w-7 h-2 bg-[#0A0A14]'
                     : 'w-2 h-2 bg-[#DCDAF0] hover:bg-[#8E96A6]'
                 }`}
                 title={v.label}
@@ -405,18 +486,30 @@ export default function VehicleMorphCanvas({ compact = false }) {
           })}
         </div>
 
-        {/* Active Selected Vehicle Pill Banner */}
-        <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#DCDAF0] shadow-xs animate-fade-in">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeVeh.color }} />
-          <span className="font-bold text-xs text-[#0A0A14]">{activeVeh.label.toUpperCase()}</span>
-          <span className="hud text-[9px] px-1.5 py-0.5 rounded bg-[#F1F0FA] text-[#5B5B73]">
+        {/* Active Selected Vehicle Floating Pill Banner */}
+        <div className="flex items-center gap-2.5 px-5 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-[#DCDAF0] shadow-md animate-fade-in">
+          <span 
+            className="w-2.5 h-2.5 rounded-full animate-pulse" 
+            style={{ backgroundColor: activeVeh.color }} 
+          />
+          <span className="font-bold text-xs sm:text-sm text-[#0A0A14] tracking-tight">
+            {activeVeh.label.toUpperCase()}
+          </span>
+          <span className="hud text-[9px] px-2 py-0.5 rounded-full bg-[#F1F0FA] text-[#5B5B73] font-semibold">
             {activeVeh.tag}
           </span>
-          <span className="text-xs font-mono font-bold text-[#3A4DFF]">{activeVeh.baseFare} BASE</span>
+          <span className="text-xs font-mono font-bold text-[#3A4DFF]">
+            {activeVeh.baseFare} BASE
+          </span>
+          <span className="hidden sm:inline text-[11px] text-[#8E96A6] border-l border-[#DCDAF0] pl-2 font-medium">
+            {activeVeh.specs}
+          </span>
         </div>
 
-        <div className="hud text-[10px] text-[#8E96A6] font-medium tracking-wider flex items-center gap-1.5 mt-0.5">
-          <span>← SLIDE / SWIPE ANYWHERE TO SELECT RIDE →</span>
+        {/* 3D Interaction Hint */}
+        <div className="hud text-[10px] text-[#8E96A6] font-semibold tracking-wider flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#3A4DFF] animate-ping" />
+          <span>DRAG OR SWIPE TO ROTATE & EXPLORE 3D FLEET</span>
         </div>
       </div>
     </div>

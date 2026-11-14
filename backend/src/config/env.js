@@ -26,7 +26,24 @@ const envSchema = z.object({
   FARE_CAR_BASE: z.coerce.number().positive().default(60),
   FARE_PER_KM: z.coerce.number().nonnegative().default(9),
   SURGE_CAP: z.coerce.number().min(1).max(2).default(1.5),
-  LOCATION_STALE_SECONDS: z.coerce.number().int().positive().default(90)
+  LOCATION_STALE_SECONDS: z.coerce.number().int().positive().default(90),
+  RAZORPAY_KEY_ID: z.string().default('rzp_test_TzfBO7UYhGdDs8'),
+  RAZORPAY_KEY_SECRET: z.string().default('rzp_test_secret_placeholder'),
+  RAZORPAY_WEBHOOK_SECRET: z.string().default('mysawari_webhook_secret_demo'),
+  // Real SOS SMS & WhatsApp Configuration
+  SOS_SMS_ENABLED: z.enum(['true', 'false']).default('true'),
+  SOS_SMS_PROVIDER: z.string().default('MSG91'),
+  SOS_SMS_AUTH_KEY: z.string().default('589861AXxH3gV5Dl6af79aacP1'),
+  SOS_SMS_SENDER_ID: z.string().default('SAWARI'),
+  SOS_SMS_FLOW_ID: z.string().default(''),
+  WHATSAPP_ENABLED: z.enum(['true', 'false']).default('true'),
+  WHATSAPP_PROVIDER: z.string().default('MSG91'),
+  WHATSAPP_AUTH_KEY: z.string().default('589861AXxH3gV5Dl6af79aacP1'),
+  WHATSAPP_INTEGRATED_NUMBER: z.string().default(''),
+  WHATSAPP_TEMPLATE_NAME: z.string().default('sos_emergency_alert'),
+  WHATSAPP_ACCESS_TOKEN: z.string().default(''),
+  WHATSAPP_PHONE_NUMBER_ID: z.string().default(''),
+  WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -40,5 +57,9 @@ export const env = Object.freeze({
   trustProxy: parsed.data.TRUST_PROXY === 'true',
   dispatchEnabled: parsed.data.DISPATCH_ENABLED === 'true',
   supabaseConfigured: Boolean(parsed.data.SUPABASE_URL && parsed.data.SUPABASE_ANON_KEY),
-  supabaseAdminConfigured: Boolean(parsed.data.SUPABASE_URL && parsed.data.SUPABASE_SERVICE_ROLE_KEY)
+  supabaseAdminConfigured: Boolean(parsed.data.SUPABASE_URL && parsed.data.SUPABASE_SERVICE_ROLE_KEY),
+  razorpayConfigured: Boolean(parsed.data.RAZORPAY_KEY_ID && parsed.data.RAZORPAY_KEY_SECRET && parsed.data.RAZORPAY_KEY_SECRET !== 'rzp_test_secret_placeholder'),
+  sosSmsEnabled: parsed.data.SOS_SMS_ENABLED === 'true',
+  whatsappEnabled: parsed.data.WHATSAPP_ENABLED === 'true',
+  msg91Configured: Boolean(parsed.data.SOS_SMS_AUTH_KEY)
 });

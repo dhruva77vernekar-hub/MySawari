@@ -7,8 +7,13 @@ export default function History() {
   return (
     <div className="min-h-screen pt-24 pb-16 px-4 md:px-8 max-w-4xl mx-auto space-y-6">
       <div className="pb-4 border-b border-[#DCDAF0]">
-        <span className="hud text-xs text-[#3A4DFF] font-bold">RIDER ACTIVITY</span>
-        <h1 className="text-3xl font-bold text-[#0A0A14]">Your Ride History</h1>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="MySawari" className="w-9 h-9 rounded-xl object-contain shadow-xs" />
+          <div>
+            <span className="hud text-xs text-[#3A4DFF] font-bold">RIDER ACTIVITY</span>
+            <h1 className="text-3xl font-bold text-[#0A0A14]">Your Ride History</h1>
+          </div>
+        </div>
         <p className="text-xs text-[#5B5B73] mt-1">Review your recent Belagavi commutes, receipts, and ratings.</p>
       </div>
 

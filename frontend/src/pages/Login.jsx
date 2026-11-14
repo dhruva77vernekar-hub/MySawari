@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, ShieldCheck, Lock, Mail, Sparkles, KeyRound } from 'lucide-react';
+import { 
+  Eye, 
+  EyeOff, 
+  ArrowRight, 
+  ShieldCheck, 
+  Lock, 
+  Mail, 
+  User, 
+  Car, 
+  SlidersHorizontal,
+  KeyRound,
+  CheckCircle2
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VehicleMorphCanvas from '../three/VehicleMorphCanvas';
 import DotGrid from '../components/ui/DotGrid';
@@ -9,11 +21,46 @@ export default function Login() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
 
-  const [email, setEmail] = useState('dhruv@mysawari.app');
-  const [passcode, setPasscode] = useState('4912');
+  // 3-Role selector: 'user' | 'rider' | 'admin'
+  const [selectedRole, setSelectedRole] = useState('user');
+
+  // Form states configured per role
+  const roleCredentials = {
+    user: {
+      email: 'dhruv@mysawari.app',
+      passcode: '4912',
+      badge: 'CUSTOMER ACCESS',
+      desc: 'Book bike, auto & cab rides with 3D reveal and transparent fares.',
+      redirect: '/'
+    },
+    rider: {
+      email: 'suresh.patil@mysawari.app',
+      passcode: '4912',
+      badge: 'RIDER / CAPTAIN PORTAL',
+      desc: 'Accept ride dispatches, enter passenger OTP and earn reassignment rewards.',
+      redirect: '/rider/dashboard'
+    },
+    admin: {
+      email: 'admin@mysawari.app',
+      passcode: 'admin2026',
+      badge: 'ADMIN OPERATIONS HUB',
+      desc: 'Smart dispatch, driver verification, automatic reassignment simulation.',
+      redirect: '/admin'
+    }
+  };
+
+  const [email, setEmail] = useState(roleCredentials.user.email);
+  const [passcode, setPasscode] = useState(roleCredentials.user.passcode);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleRoleChange = (role) => {
+    setSelectedRole(role);
+    setEmail(roleCredentials[role].email);
+    setPasscode(roleCredentials[role].passcode);
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,15 +70,34 @@ export default function Login() {
     }
     setError('');
     setLoading(true);
-    await signIn(email, passcode);
-    setLoading(false);
-    // Redirect directly towards the main page
-    navigate('/');
+
+    try {
+      const loggedUser = await signIn(email, passcode, selectedRole);
+      setLoading(false);
+
+      if (selectedRole === 'admin') {
+        navigate('/admin');
+      } else if (selectedRole === 'rider') {
+        if (loggedUser.status === 'PENDING_APPROVAL' || loggedUser.applicationStatus === 'PENDING_APPROVAL') {
+          navigate('/rider/application-status');
+        } else if (loggedUser.status === 'REJECTED' || loggedUser.applicationStatus === 'REJECTED') {
+          navigate('/rider/application-status');
+        } else {
+          navigate('/rider/dashboard');
+        }
+      } else {
+        // Customer / User -> preserves read-only customer interface
+        navigate('/');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err?.message || 'Authentication failed. Please check credentials.');
+    }
   };
 
   return (
     <div className="relative min-h-screen bg-[#F1F0FA] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-      {/* Background DotGrid (React Bits) */}
+      {/* Background DotGrid */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
         <DotGrid
           baseColor="#C9CFDA"
@@ -46,10 +112,10 @@ export default function Login() {
       </div>
 
       {/* Main 3D Glassmorphism Login Container */}
-      <div className="relative z-10 max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 rounded-[32px] overflow-hidden bg-white/90 backdrop-blur-xl border border-[#DCDAF0] shadow-[0_30px_90px_-25px_rgba(58,77,255,0.25)]">
+      <div className="relative z-10 max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 rounded-[32px] overflow-hidden bg-white/95 backdrop-blur-xl border border-[#DCDAF0] shadow-[0_30px_90px_-25px_rgba(58,77,255,0.25)]">
         
-        {/* Left Side: 3D Vehicle Interactive Stage (7 cols) */}
-        <div className="lg:col-span-7 bg-gradient-to-br from-[#E9ECF2] via-[#F1F0FA] to-[#C9CFDA]/40 p-8 sm:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#DCDAF0] relative overflow-hidden">
+        {/* Left Side: 3D Vehicle Interactive Stage */}
+        <div className="lg:col-span-6 bg-gradient-to-br from-[#E9ECF2] via-[#F1F0FA] to-[#C9CFDA]/40 p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#DCDAF0] relative overflow-hidden">
           {/* Top Stage HUD */}
           <div className="flex items-center justify-between text-xs text-[#5B5B73]">
             <div className="flex items-center gap-2">
@@ -73,7 +139,7 @@ export default function Login() {
               Morph into Cabs, Bike Taxis, and Autos with instant live fare transparency.
             </p>
 
-            <div className="w-full h-64 sm:h-72 mt-2">
+            <div className="w-full h-56 sm:h-64 mt-2">
               <VehicleMorphCanvas compact={true} />
             </div>
           </div>
@@ -87,15 +153,67 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right Side: Sleek Login Form (5 cols) */}
-        <div className="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-between space-y-8 bg-white">
+        {/* Right Side: 3-Role Login Form */}
+        <div className="lg:col-span-6 p-6 sm:p-10 flex flex-col justify-between space-y-6 bg-white">
           <div>
-            <div className="space-y-1 mb-6">
-              <span className="hud text-xs text-[#3A4DFF] font-bold">RIDER & CAPTAIN ACCESS</span>
-              <h1 className="text-3xl font-bold text-[#0A0A14] tracking-tight">Welcome Back</h1>
+            <div className="space-y-1 mb-5">
+              <span className="hud text-xs text-[#3A4DFF] font-bold tracking-wider">
+                {roleCredentials[selectedRole].badge}
+              </span>
+              <div className="flex items-center gap-2.5">
+                <img src="/logo.png" alt="MySawari Logo" className="w-8 h-8 rounded-xl object-contain shadow-xs" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#0A0A14] tracking-tight">
+                  Welcome to MySawari
+                </h1>
+              </div>
               <p className="text-xs text-[#5B5B73]">
-                Enter your registered credentials to launch your MySawari account.
+                {roleCredentials[selectedRole].desc}
               </p>
+            </div>
+
+            {/* Clear 3-Role Selector Tabs */}
+            <div className="grid grid-cols-3 gap-2 p-1.5 bg-[#F1F0FA] rounded-2xl border border-[#DCDAF0] mb-5">
+              {/* User Tab */}
+              <button
+                type="button"
+                onClick={() => handleRoleChange('user')}
+                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all cursor-pointer ${
+                  selectedRole === 'user'
+                    ? 'bg-white text-[#3A4DFF] font-bold shadow-md border border-[#DCDAF0]/50'
+                    : 'text-[#5B5B73] hover:text-[#0A0A14] font-medium'
+                }`}
+              >
+                <User className="w-4 h-4 mb-1" />
+                <span className="text-[11px] uppercase tracking-wider">User</span>
+              </button>
+
+              {/* Rider (Captain) Tab */}
+              <button
+                type="button"
+                onClick={() => handleRoleChange('rider')}
+                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all cursor-pointer ${
+                  selectedRole === 'rider'
+                    ? 'bg-white text-[#3A4DFF] font-bold shadow-md border border-[#DCDAF0]/50'
+                    : 'text-[#5B5B73] hover:text-[#0A0A14] font-medium'
+                }`}
+              >
+                <Car className="w-4 h-4 mb-1" />
+                <span className="text-[11px] uppercase tracking-wider">Rider</span>
+              </button>
+
+              {/* Admin Tab */}
+              <button
+                type="button"
+                onClick={() => handleRoleChange('admin')}
+                className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-all cursor-pointer ${
+                  selectedRole === 'admin'
+                    ? 'bg-[#0A0A14] text-white font-bold shadow-md'
+                    : 'text-[#5B5B73] hover:text-[#0A0A14] font-medium'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4 mb-1" />
+                <span className="text-[11px] uppercase tracking-wider">Admin</span>
+              </button>
             </div>
 
             {error && (
@@ -104,14 +222,14 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Email Address */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[#5B5B73] uppercase tracking-wider">
-                  Email Address
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-[#5B5B73] uppercase tracking-wider">
+                  {selectedRole === 'admin' ? 'Admin ID / Email' : 'Email Address'}
                 </label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-[#8E96A6] pointer-events-none">
+                  <div className="absolute left-3.5 text-[#8E96A6] pointer-events-none">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
@@ -120,23 +238,23 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@email.com"
-                    className="w-full h-14 pl-11 pr-4 bg-[#F1F0FA] rounded-2xl border border-transparent focus:border-[#3A4DFF] focus:bg-white text-sm font-medium text-[#0A0A14] outline-none transition-all placeholder:text-[#8E96A6]"
+                    className="w-full h-12 pl-10 pr-4 bg-[#F1F0FA] rounded-xl border border-transparent focus:border-[#3A4DFF] focus:bg-white text-xs sm:text-sm font-medium text-[#0A0A14] outline-none transition-all placeholder:text-[#8E96A6]"
                   />
                 </div>
               </div>
 
               {/* Passcode / PIN */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-[#5B5B73] uppercase tracking-wider">
-                    Passcode / PIN
+                  <label className="block text-[11px] font-semibold text-[#5B5B73] uppercase tracking-wider">
+                    {selectedRole === 'admin' ? 'Security Passcode' : 'Passcode / PIN'}
                   </label>
-                  <span className="text-[11px] text-[#3A4DFF] hover:underline cursor-pointer font-medium">
+                  <span className="text-[10px] text-[#3A4DFF] hover:underline cursor-pointer font-medium">
                     Forgot?
                   </span>
                 </div>
                 <div className="relative flex items-center">
-                  <div className="absolute left-4 text-[#8E96A6] pointer-events-none">
+                  <div className="absolute left-3.5 text-[#8E96A6] pointer-events-none">
                     <KeyRound className="w-4 h-4" />
                   </div>
                   <input
@@ -144,13 +262,13 @@ export default function Login() {
                     required
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
-                    placeholder="Enter your 4 or 6 digit passcode"
-                    className="w-full h-14 pl-11 pr-12 bg-[#F1F0FA] rounded-2xl border border-transparent focus:border-[#3A4DFF] focus:bg-white text-sm font-medium text-[#0A0A14] outline-none transition-all placeholder:text-[#8E96A6]"
+                    placeholder="Enter passcode"
+                    className="w-full h-12 pl-10 pr-10 bg-[#F1F0FA] rounded-xl border border-transparent focus:border-[#3A4DFF] focus:bg-white text-xs sm:text-sm font-medium text-[#0A0A14] outline-none transition-all placeholder:text-[#8E96A6]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-4 text-[#8E96A6] hover:text-[#0A0A14] transition-colors"
+                    className="absolute right-3.5 text-[#8E96A6] hover:text-[#0A0A14] transition-colors"
                   >
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -161,28 +279,54 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-full bg-[#0A0A14] hover:bg-[#3A4DFF] text-white font-bold text-xs uppercase tracking-wider shadow-lg hover:shadow-[0_15px_35px_-10px_rgba(58,77,255,0.5)] transition-all transform active:scale-98 flex items-center justify-center gap-2 select-none cursor-pointer mt-6"
+                className={`w-full py-3.5 rounded-full font-bold text-xs uppercase tracking-wider shadow-lg transition-all transform active:scale-98 flex items-center justify-center gap-2 select-none cursor-pointer mt-4 ${
+                  selectedRole === 'admin'
+                    ? 'bg-[#0A0A14] hover:bg-[#1E1E2F] text-white shadow-black/20'
+                    : 'bg-[#3A4DFF] hover:bg-[#2B3CD9] text-white shadow-[#3A4DFF]/30'
+                }`}
               >
-                <span>{loading ? 'AUTHENTICATING...' : 'LOG IN & ENTER MYSAWARI'}</span>
+                <span>
+                  {loading
+                    ? 'AUTHENTICATING...'
+                    : selectedRole === 'admin'
+                    ? 'ENTER ADMIN CONSOLE'
+                    : selectedRole === 'rider'
+                    ? 'ENTER RIDER DASHBOARD'
+                    : 'LOG IN & BOOK RIDE'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
-            {/* Quick Demo Hint */}
-            <div className="mt-4 p-3 rounded-2xl bg-[#F1F0FA] border border-[#DCDAF0] text-center">
-              <span className="hud text-[10px] text-[#8E96A6] block">HACKATHON QUICK DEMO LOGIN</span>
-              <p className="text-xs text-[#0A0A14] font-medium mt-0.5">
-                Pre-filled: <code>dhruv@mysawari.app</code> · PIN: <code>4912</code>
-              </p>
+            {/* Quick 1-Click Role Fill Box */}
+            <div className="mt-3.5 p-3 rounded-xl bg-[#F8F8FC] border border-[#DCDAF0] flex items-center justify-between text-xs">
+              <div className="space-y-0.5">
+                <span className="hud text-[9px] text-[#8E96A6] uppercase">DEMO CREDENTIALS</span>
+                <p className="font-mono text-[11px] text-[#0A0A14] font-semibold">
+                  {roleCredentials[selectedRole].email} · {roleCredentials[selectedRole].passcode}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3" /> Auto-filled
+              </span>
             </div>
           </div>
 
-          <p className="text-xs text-center text-[#5B5B73]">
-            New to MySawari?{' '}
-            <Link to="/register" className="font-semibold text-[#3A4DFF] hover:underline">
-              Create an account
-            </Link>
-          </p>
+          {/* Links for separate registrations */}
+          <div className="space-y-1.5 pt-2 border-t border-[#DCDAF0]/50 text-center text-xs text-[#5B5B73]">
+            <p>
+              New passenger?{' '}
+              <Link to="/register" className="font-semibold text-[#3A4DFF] hover:underline">
+                Create User Account
+              </Link>
+            </p>
+            <p className="text-[11px]">
+              Want to drive and earn?{' '}
+              <Link to="/rider/register" className="font-semibold text-emerald-600 hover:underline">
+                Register as Rider (Captain)
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

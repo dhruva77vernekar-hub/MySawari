@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, 
   Users, 
@@ -9,24 +10,24 @@ import {
   Info, 
   ArrowRight, 
   Check, 
-  Upload, 
-  Plus, 
-  Phone, 
-  MapPin, 
-  Clock, 
+  Camera, 
+  Car,
+  Phone,
+  MapPin,
   Sparkles,
-  Camera,
-  Share2
+  ShieldCheck,
+  ChevronRight,
+  Compass
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import EmergencyContactsModal from '../safety/EmergencyContactsModal';
 
 export default function MenuOverlay({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const { lang, setLang, t } = useLanguage();
+  const { user, updateEmergencyContact } = useAuth();
   const [activeModal, setActiveModal] = useState(null); // 'buddy' | 'route' | 'pass' | 'lang' | 'sos' | 'about' | null
-
-  // Ride Buddy State
-  const [buddyEnabled, setBuddyEnabled] = useState(true);
-  const [buddyConfirmed, setBuddyConfirmed] = useState(false);
 
   // Route Assist State
   const [reports, setReports] = useState([
@@ -58,7 +59,9 @@ export default function MenuOverlay({ isOpen, onClose }) {
   const [passSubscribed, setPassSubscribed] = useState(false);
 
   // SOS Setup State
-  const [emergencyPhone, setEmergencyPhone] = useState('+91 94481 23456');
+  const [emergencyPhone, setEmergencyPhone] = useState(
+    () => user?.emergencyContact || localStorage.getItem('mysawari_emergency_contact') || '+91 94481 23456'
+  );
   const [secondaryPhone, setSecondaryPhone] = useState('+91 98450 98765');
   const [autoShareGps, setAutoShareGps] = useState(true);
   const [sosSaved, setSosSaved] = useState(false);
@@ -90,115 +93,193 @@ export default function MenuOverlay({ isOpen, onClose }) {
     setTimeout(() => setReportSuccess(false), 3000);
   };
 
-  const menuItems = [
+  const menuSections = [
+    {
+      id: 'book',
+      title: 'Book a Ride',
+      desc: 'Instant auto, cab, bike & comfort booking',
+      badge: 'Zero Surge',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      iconBg: 'bg-emerald-500/10 text-emerald-600',
+      icon: Car,
+      onClick: () => {
+        onClose();
+        navigate('/book');
+      }
+    },
+    {
+      id: 'rider-portal',
+      title: 'Rider / Captain Portal',
+      desc: 'Online toggle, ride offers & enter passenger OTP',
+      badge: 'Driver Mode',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      iconBg: 'bg-indigo-500/10 text-indigo-600',
+      icon: Car,
+      onClick: () => {
+        onClose();
+        navigate('/rider/dashboard');
+      }
+    },
+    {
+      id: 'rider-register',
+      title: 'Drive with MySawari',
+      desc: 'Register as a rider with DL & vehicle RC verification',
+      badge: 'Earn Rewards',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      iconBg: 'bg-emerald-500/10 text-emerald-600',
+      icon: Sparkles,
+      onClick: () => {
+        onClose();
+        navigate('/rider/register');
+      }
+    },
+    {
+      id: 'admin-console',
+      title: 'Admin Operations Hub',
+      desc: 'Smart dispatch, driver approvals & auto-reassignment simulation',
+      badge: 'Console',
+      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+      iconBg: 'bg-purple-500/10 text-purple-600',
+      icon: ShieldCheck,
+      onClick: () => {
+        onClose();
+        navigate('/admin');
+      }
+    },
+    {
+      id: 'login-switch',
+      title: 'Sign In / Switch Role',
+      desc: 'Switch between Customer, Rider & Admin accounts',
+      badge: '3-Role Login',
+      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+      iconBg: 'bg-blue-500/10 text-blue-600',
+      icon: Users,
+      onClick: () => {
+        onClose();
+        navigate('/login');
+      }
+    },
     {
       id: 'buddy',
-      title: t('rideBuddy'),
-      sub: 'Pool with Consent & Split Fare',
-      desc: t('rideBuddyDesc'),
+      title: 'Ride Buddy (Pool & Split)',
+      desc: 'Share rides with on-route passengers and split fares',
+      badge: 'Save 45%',
+      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+      iconBg: 'bg-blue-500/10 text-blue-600',
       icon: Users,
-      badge: 'Split Fare',
-      badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-      iconBg: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-    },
-    {
-      id: 'route',
-      title: t('routeAssist'),
-      sub: 'Crowdsourced Road & Closure Alerts',
-      desc: t('routeAssistDesc'),
-      icon: AlertTriangle,
-      badge: 'Live Reports',
-      badgeColor: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-      iconBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-    },
-    {
-      id: 'pass',
-      title: t('ridePass'),
-      sub: 'Route Subscriptions & Passes',
-      desc: t('ridePassDesc'),
-      badge: 'Save 40%',
-      badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-      iconBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-    },
-    {
-      id: 'lang',
-      title: t('language'),
-      sub: 'English · ಕನ್ನಡ · हिंदी',
-      desc: t('languageDesc'),
-      badge: lang.toUpperCase(),
-      badgeColor: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-      iconBg: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
+      onClick: () => setActiveModal('buddy')
     },
     {
       id: 'sos',
-      title: t('sosSetup'),
-      sub: 'Pre-configure Contacts & Live GPS',
-      desc: t('sosSetupDesc'),
-      badge: 'Safety Pre-check',
-      badgeColor: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-      iconBg: 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+      title: 'Safety & Emergency SOS',
+      desc: 'Set emergency contacts & live GPS beacon',
+      badge: '24/7 Rapid',
+      badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
+      iconBg: 'bg-rose-500/10 text-rose-600',
+      icon: ShieldAlert,
+      onClick: () => setActiveModal('sos')
+    },
+    {
+      id: 'pass',
+      title: 'Ride Pass & Passes',
+      desc: 'Daily, monthly passes for commuters & students',
+      badge: 'Up to 40% Off',
+      badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
+      iconBg: 'bg-amber-500/10 text-amber-600',
+      icon: CreditCard,
+      onClick: () => setActiveModal('pass')
+    },
+    {
+      id: 'route',
+      title: 'Route Assist & Road Alerts',
+      desc: 'Crowdsourced road closure & detour warnings',
+      badge: 'Live Traffic',
+      badgeColor: 'bg-orange-50 text-orange-800 border-orange-200',
+      iconBg: 'bg-orange-500/10 text-orange-600',
+      icon: AlertTriangle,
+      onClick: () => setActiveModal('route')
+    },
+    {
+      id: 'lang',
+      title: 'Language / ಭಾಷೆ / भाषा',
+      desc: 'Switch to English, Kannada or Hindi',
+      badge: lang.toUpperCase(),
+      badgeColor: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+      iconBg: 'bg-cyan-500/10 text-cyan-600',
+      icon: Globe,
+      onClick: () => setActiveModal('lang')
     },
     {
       id: 'about',
-      title: t('aboutMySawari'),
-      sub: 'Smart Mobility for Belagavi',
-      desc: t('aboutDesc'),
+      title: 'About MySawari',
+      desc: 'Belagavi smart mobility & zero-commission autos',
       badge: 'Belagavi v3.0',
-      badgeColor: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
-      iconBg: 'bg-violet-500/20 text-violet-400 border-violet-500/30'
+      badgeColor: 'bg-purple-50 text-purple-800 border-purple-200',
+      iconBg: 'bg-purple-500/10 text-purple-600',
+      icon: Info,
+      onClick: () => setActiveModal('about')
     }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0A14]/96 backdrop-blur-2xl text-white flex flex-col justify-between p-4 sm:p-8 md:p-12 overflow-y-auto animate-fade-in">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-5 max-w-2xl mx-auto w-full">
+    <div className="fixed inset-0 z-50 bg-[#F1F0FA]/80 backdrop-blur-2xl text-[#0A0A14] flex flex-col justify-between p-4 sm:p-8 overflow-y-auto animate-fade-in">
+      {/* Top Header Bar */}
+      <div className="max-w-4xl mx-auto w-full flex items-center justify-between pb-4 border-b border-[#DCDAF0]">
         <div className="flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#3A4DFF] animate-pulse" />
-          <span className="hud text-xs text-[#C9CFDA] tracking-widest uppercase font-semibold">
-            MYSAWARI · {t('menu')}
-          </span>
+          <img src="/logo.png" alt="MySawari" className="w-9 h-9 rounded-xl object-contain shadow-xs" />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Compass className="w-4 h-4 text-[#3A4DFF]" />
+              <h2 className="font-extrabold text-base text-[#0A0A14] tracking-tight">
+                MySawari Explore
+              </h2>
+            </div>
+            <p className="text-[11px] text-[#5B5B73] font-medium">
+              Belagavi City Smart Mobility & Ride Dispatch
+            </p>
+          </div>
         </div>
+
         <button
           onClick={onClose}
-          className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white cursor-pointer"
+          className="w-10 h-10 rounded-full bg-white hover:bg-[#E9ECF2] border border-[#DCDAF0] flex items-center justify-center text-[#0A0A14] shadow-xs cursor-pointer transition-all hover:scale-105 active:scale-95"
           aria-label="Close menu"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Main Menu: One Below One (Single Column Stack) */}
-      <div className="max-w-2xl mx-auto w-full my-auto py-6 space-y-3">
-        {menuItems.map((item) => {
+      {/* Main Grid of Pleasant, User-Friendly Cards */}
+      <div className="max-w-4xl mx-auto w-full my-auto py-6 grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {menuSections.map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
-              onClick={() => setActiveModal(item.id)}
-              className="group w-full p-4 sm:p-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#3A4DFF]/60 transition-all text-left flex items-center justify-between shadow-sm cursor-pointer hover:translate-x-1 duration-200"
+              onClick={item.onClick}
+              className="group p-4 sm:p-5 rounded-2xl bg-white hover:bg-white/95 border border-[#DCDAF0] hover:border-[#3A4DFF] hover:shadow-[0_8px_25px_-5px_rgba(58,77,255,0.14)] transition-all text-left flex items-center justify-between cursor-pointer"
             >
-              <div className="flex items-center gap-4 min-w-0 pr-3">
-                <div className={`p-3 rounded-xl border ${item.iconBg} flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                  {Icon && <Icon className="w-5 h-5 sm:w-6 sm:h-6" />}
+              <div className="flex items-center gap-3.5 min-w-0 pr-2">
+                <div className={`w-11 h-11 rounded-2xl ${item.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-[#45E0F2] transition-colors truncate">
+                    <h3 className="font-bold text-sm sm:text-base text-[#0A0A14] group-hover:text-[#3A4DFF] transition-colors truncate">
                       {item.title}
                     </h3>
-                    <span className={`hud text-[9px] px-2 py-0.5 rounded-full border ${item.badgeColor} font-semibold`}>
+                    <span className={`hud text-[9px] px-2 py-0.5 rounded-full border ${item.badgeColor} font-bold`}>
                       {item.badge}
                     </span>
                   </div>
-                  <p className="text-xs text-[#8E96A6] mt-0.5 truncate sm:whitespace-normal leading-relaxed">
+                  <p className="text-xs text-[#5B5B73] mt-0.5 truncate leading-relaxed">
                     {item.desc}
                   </p>
                 </div>
               </div>
 
-              <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#3A4DFF] group-hover:border-[#3A4DFF] transition-all flex-shrink-0">
-                <ArrowRight className="w-4 h-4 text-[#8E96A6] group-hover:text-white" />
+              <div className="w-8 h-8 rounded-full bg-[#F1F0FA] group-hover:bg-[#3A4DFF] group-hover:text-white flex items-center justify-center transition-all flex-shrink-0">
+                <ChevronRight className="w-4 h-4 text-[#5B5B73] group-hover:text-white" />
               </div>
             </button>
           );
@@ -206,97 +287,82 @@ export default function MenuOverlay({ isOpen, onClose }) {
       </div>
 
       {/* Footer Info */}
-      <div className="border-t border-white/10 pt-5 text-xs text-[#8E96A6] flex flex-col sm:flex-row items-center justify-between gap-3 max-w-2xl mx-auto w-full">
-        <div>
-          <span className="text-white font-medium">MySawari</span> · Belagavi Mobility Network
+      <div className="max-w-4xl mx-auto w-full pt-4 border-t border-[#DCDAF0] flex flex-col sm:flex-row items-center justify-between text-xs text-[#5B5B73] gap-2">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="font-bold text-[#0A0A14]">MySawari Belagavi Network</span>
+          <span>· Zero Surge Commission</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="hover:text-white cursor-pointer" onClick={() => setActiveModal('lang')}>
+          <button 
+            onClick={() => setActiveModal('lang')}
+            className="hover:text-[#3A4DFF] font-medium cursor-pointer"
+          >
             🌐 {lang === 'en' ? 'English' : lang === 'kn' ? 'ಕನ್ನಡ' : 'हिंदी'}
-          </span>
-          <span>Zero Commission Autos</span>
+          </button>
           <span>Verified Captains</span>
+          <span>24/7 SOS Ready</span>
         </div>
       </div>
 
-      {/* SUB-MODALS FOR EACH OF THE 6 FEATURES */}
+      {/* SUB-MODALS (Bright, Pleasant, Card-based) */}
 
       {/* 1. RIDE BUDDY MODAL */}
       {activeModal === 'buddy' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-[#3A4DFF]/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-[#DCDAF0] rounded-3xl p-6 md:p-8 max-w-lg w-full text-[#0A0A14] shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#F1F0FA] hover:bg-[#E2E8F0] flex items-center justify-center text-[#5B5B73] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400">
+              <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Ride Buddy (Pool & Split)</h3>
-                <span className="text-xs text-[#8E96A6]">Shared Commute with Rider Consent</span>
+                <h3 className="text-xl font-bold text-[#0A0A14]">Ride Buddy · Pool & Split</h3>
+                <span className="text-xs text-[#5B5B73]">Shared Commute with 100% Rider Consent</span>
               </div>
             </div>
 
-            <p className="text-sm text-[#C9CFDA] mb-6 leading-relaxed">
-              If you are riding from <span className="text-white font-semibold">Place A</span> to <span className="text-white font-semibold">Place C</span>, another commuter at <span className="text-white font-semibold">Place B</span> headed to Place C can request to join. With your permission, the ride is shared and fare is split automatically.
+            <p className="text-xs text-[#5B5B73] mb-5 leading-relaxed">
+              If an active ride is passing your pickup and heading in your direction, you can request to share. Once approved by the passenger and captain, the route combines and your fare is automatically split!
             </p>
 
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 mb-6 space-y-3">
-              <div className="flex items-center justify-between text-xs text-[#8E96A6]">
-                <span>SAMPLE RIDE BUDDY MATCH</span>
-                <span className="text-emerald-400 font-bold">SAVE 42% FARE</span>
+            <div className="bg-[#F8F9FD] rounded-2xl p-4 border border-[#DCDAF0] mb-5 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="hud text-[#3A4DFF] font-bold">ROUTE SHARING CORRIDOR</span>
+                <span className="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
+                  SAVE UP TO 45%
+                </span>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Your Route (Place A ➔ C):</span>
-                  <span className="font-semibold text-white">KLE Tech ➔ Chennamma Circle</span>
+              <div className="space-y-1.5 text-xs text-[#5B5B73]">
+                <div className="flex justify-between">
+                  <span>Primary Route:</span>
+                  <span className="font-bold text-[#0A0A14]">KLE Tech Campus ➔ Chennamma Circle</span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-blue-300">
-                  <span>Buddy Pickup (Place B):</span>
-                  <span>Bogarves Plaza (On Route)</span>
+                <div className="flex justify-between text-blue-700">
+                  <span>Buddy Pickup on-way:</span>
+                  <span className="font-semibold">Bogarves Plaza (+1.2 km detour)</span>
                 </div>
-                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-sm">
-                  <span>Standard Fare: <span className="line-through text-[#8E96A6]">₹120</span></span>
-                  <span className="text-emerald-400 font-bold text-base">Your Split: ₹68</span>
+                <div className="pt-2 border-t border-[#DCDAF0] flex justify-between font-bold text-sm">
+                  <span>Single Rider: ₹120</span>
+                  <span className="text-emerald-600">Your Split: ₹68</span>
                 </div>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3.5 bg-white/[0.03] rounded-xl border border-white/10 mb-6">
-              <span className="text-xs text-[#C9CFDA]">Accept Ride Buddy Requests</span>
-              <button
-                onClick={() => setBuddyEnabled(!buddyEnabled)}
-                className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${buddyEnabled ? 'bg-[#3A4DFF]' : 'bg-white/20'}`}
-              >
-                <span className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${buddyEnabled ? 'right-0.5' : 'left-0.5'}`} />
-              </button>
             </div>
 
             <button
               onClick={() => {
-                setBuddyConfirmed(true);
-                setTimeout(() => {
-                  setBuddyConfirmed(false);
-                  setActiveModal(null);
-                }, 1800);
+                setActiveModal(null);
+                onClose();
               }}
-              className="w-full py-3.5 rounded-xl bg-[#3A4DFF] hover:bg-[#3242E0] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#3A4DFF]/30 cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-[#3A4DFF] hover:bg-[#2B3BE5] font-bold text-sm text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-[#3A4DFF]/20 cursor-pointer"
             >
-              {buddyConfirmed ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-300" />
-                  <span>Ride Buddy Active on Your Account</span>
-                </>
-              ) : (
-                <>
-                  <Users className="w-4 h-4" />
-                  <span>Confirm Ride Buddy Preferences</span>
-                </>
-              )}
+              <span>Explore Ride Buddy in Main Tab</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -304,59 +370,55 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
       {/* 2. ROUTE ASSIST MODAL */}
       {activeModal === 'route' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-amber-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-[#DCDAF0] rounded-3xl p-6 md:p-8 max-w-lg w-full text-[#0A0A14] shadow-2xl relative animate-scale-up max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#F1F0FA] hover:bg-[#E2E8F0] flex items-center justify-center text-[#5B5B73] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400">
+              <div className="p-3 rounded-2xl bg-amber-50 text-amber-600">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Route Assist</h3>
-                <span className="text-xs text-[#8E96A6]">Road Closures & Community Detour Alerts</span>
+                <h3 className="text-xl font-bold text-[#0A0A14]">Route Assist & Road Alerts</h3>
+                <span className="text-xs text-[#5B5B73]">Community Warnings for Belagavi Streets</span>
               </div>
             </div>
 
-            <p className="text-xs text-[#C9CFDA] mb-4">
-              Upload photos of road blocks, waterlogging, or diversions in Belagavi so our smart router avoids those stretches for all riders and captains.
-            </p>
-
-            {/* Live active alerts */}
-            <div className="space-y-2 mb-6">
-              <span className="hud text-[10px] text-amber-400 font-bold block">LIVE BELAGAVI REPORTS</span>
+            {/* Active alerts */}
+            <div className="space-y-2 mb-5">
+              <span className="hud text-[10px] text-[#5B5B73] font-bold block">LIVE ROAD REPORTS</span>
               {reports.map((r) => (
-                <div key={r.id} className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center gap-3">
-                  <img src={r.image} alt={r.location} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                <div key={r.id} className="p-3 bg-[#F8F9FD] rounded-xl border border-[#DCDAF0] flex items-center gap-3">
+                  <img src={r.image} alt={r.location} className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-white truncate">{r.location}</h4>
-                    <p className="text-[11px] text-amber-300 truncate">{r.type}</p>
-                    <span className="text-[10px] text-[#8E96A6]">{r.time} · Verified by MySawari</span>
+                    <h4 className="text-xs font-bold text-[#0A0A14] truncate">{r.location}</h4>
+                    <p className="text-[11px] text-amber-700 truncate">{r.type}</p>
+                    <span className="text-[10px] text-[#8E96A6]">{r.time} · Verified</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Form to submit new route alert */}
-            <form onSubmit={handleAddReport} className="bg-white/[0.04] p-4 rounded-2xl border border-white/10 space-y-3">
-              <span className="hud text-[10px] text-white font-bold block">REPORT A ROAD PROBLEM</span>
+            {/* Submit form */}
+            <form onSubmit={handleAddReport} className="bg-[#F8F9FD] p-4 rounded-2xl border border-[#DCDAF0] space-y-3">
+              <span className="hud text-[10px] text-[#0A0A14] font-bold block">REPORT A ROAD PROBLEM</span>
               <input
                 type="text"
                 value={newLocation}
                 onChange={(e) => setNewLocation(e.target.value)}
                 placeholder="Street / Landmark (e.g. Khade Bazar Road)"
-                className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs text-white placeholder-[#8E96A6] focus:outline-none focus:border-amber-400"
+                className="w-full px-3 py-2 rounded-xl bg-white border border-[#DCDAF0] text-xs text-[#0A0A14] placeholder-[#8E96A6] outline-none focus:border-[#3A4DFF]"
                 required
               />
               <div className="grid grid-cols-2 gap-2">
                 <select
                   value={newType}
                   onChange={(e) => setNewType(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-xs text-white focus:outline-none"
+                  className="px-3 py-2 rounded-xl bg-white border border-[#DCDAF0] text-xs text-[#0A0A14] outline-none"
                 >
                   <option value="Road Closure">Road Closure</option>
                   <option value="Pipeline Repair">Pipeline Repair</option>
@@ -364,40 +426,24 @@ export default function MenuOverlay({ isOpen, onClose }) {
                   <option value="Heavy Traffic">Heavy Traffic Jam</option>
                 </select>
 
-                <label className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-xs cursor-pointer text-[#C9CFDA]">
-                  <Camera className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{previewImage ? 'Photo Added' : 'Attach Photo'}</span>
+                <label className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-[#DCDAF0] text-xs cursor-pointer text-[#5B5B73] hover:bg-[#F1F0FA]">
+                  <Camera className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{previewImage ? 'Photo Attached' : 'Attach Photo'}</span>
                   <input type="file" accept="image/*" onChange={handleImagePick} className="hidden" />
                 </label>
               </div>
 
-              {previewImage && (
-                <div className="relative w-full h-20 rounded-lg overflow-hidden border border-white/10">
-                  <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setPreviewImage(null)}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {reportSuccess ? (
                   <>
-                    <Check className="w-4 h-4 text-black" />
-                    <span>Alert Published & Routes Updated!</span>
+                    <Check className="w-4 h-4" />
+                    <span>Report Published & Routing Updated!</span>
                   </>
                 ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    <span>Publish Road Closure Alert</span>
-                  </>
+                  <span>Publish Alert</span>
                 )}
               </button>
             </form>
@@ -407,56 +453,50 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
       {/* 3. RIDE PASS MODAL */}
       {activeModal === 'pass' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-emerald-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-[#DCDAF0] rounded-3xl p-6 md:p-8 max-w-lg w-full text-[#0A0A14] shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#F1F0FA] hover:bg-[#E2E8F0] flex items-center justify-center text-[#5B5B73] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
                 <CreditCard className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">MySawari Ride Pass</h3>
-                <span className="text-xs text-[#8E96A6]">Subscription Pass for Daily Commuters</span>
+                <h3 className="text-xl font-bold text-[#0A0A14]">Commuter Passes</h3>
+                <span className="text-xs text-[#5B5B73]">Save up to 40% on Regular Routes</span>
               </div>
             </div>
 
-            <p className="text-xs text-[#C9CFDA] mb-4">
-              Save up to 40% on daily office & student commutes in Belagavi. Select a pass tier for your regular route:
-            </p>
-
             <div className="mb-4">
-              <label className="text-[11px] text-[#8E96A6] block mb-1">SELECT YOUR PRIMARY COMMUTE ROUTE</label>
+              <label className="text-[11px] text-[#5B5B73] block mb-1 font-semibold">SELECT ROUTE</label>
               <select
                 value={passRoute}
                 onChange={(e) => setPassRoute(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl bg-[#F8F9FD] border border-[#DCDAF0] text-xs text-[#0A0A14] outline-none"
               >
                 <option value="KLE Tech ⇄ Rani Chennamma Circle">KLE Tech Campus ⇄ Rani Chennamma Circle</option>
                 <option value="VTU Campus ⇄ Belagavi Railway Station">VTU Campus ⇄ Belagavi Railway Station</option>
                 <option value="Bogarves Plaza ⇄ Camp & Cantonment">Bogarves Plaza ⇄ Camp & Cantonment</option>
-                <option value="Udyambag Industrial ⇄ Khade Bazar">Udyambag Industrial ⇄ Khade Bazar</option>
               </select>
             </div>
 
-            {/* Pass Tiers */}
-            <div className="grid grid-cols-3 gap-2.5 mb-6">
+            <div className="grid grid-cols-3 gap-2.5 mb-5">
               <button
                 type="button"
                 onClick={() => setSelectedPass('daily')}
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                   selectedPass === 'daily'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                    : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#5B5B73] hover:bg-white'
                 }`}
               >
                 <span className="hud text-[9px] block">DAILY</span>
-                <span className="text-xl font-bold text-white block mt-1">₹49</span>
-                <span className="text-[10px] text-emerald-300">2 Rides/day</span>
+                <span className="text-lg font-bold text-[#0A0A14] block mt-0.5">₹49</span>
+                <span className="text-[10px] text-emerald-700">2 Rides</span>
               </button>
 
               <button
@@ -464,16 +504,13 @@ export default function MenuOverlay({ isOpen, onClose }) {
                 onClick={() => setSelectedPass('monthly')}
                 className={`p-3 rounded-2xl border text-center transition-all relative cursor-pointer ${
                   selectedPass === 'monthly'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-500/10'
-                    : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#5B5B73] hover:bg-white'
                 }`}
               >
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-emerald-500 text-[8px] font-bold text-black uppercase">
-                  Best Value
-                </span>
                 <span className="hud text-[9px] block">MONTHLY</span>
-                <span className="text-xl font-bold text-white block mt-1">₹799</span>
-                <span className="text-[10px] text-emerald-300">60 Rides</span>
+                <span className="text-lg font-bold text-[#0A0A14] block mt-0.5">₹799</span>
+                <span className="text-[10px] text-emerald-700">60 Rides</span>
               </button>
 
               <button
@@ -481,13 +518,13 @@ export default function MenuOverlay({ isOpen, onClose }) {
                 onClick={() => setSelectedPass('yearly')}
                 className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
                   selectedPass === 'yearly'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                    : 'bg-white/5 border-white/10 text-[#8E96A6] hover:bg-white/10'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#5B5B73] hover:bg-white'
                 }`}
               >
                 <span className="hud text-[9px] block">ANNUAL</span>
-                <span className="text-xl font-bold text-white block mt-1">₹4999</span>
-                <span className="text-[10px] text-emerald-300">Unlimited</span>
+                <span className="text-lg font-bold text-[#0A0A14] block mt-0.5">₹4999</span>
+                <span className="text-[10px] text-emerald-700">Unlimited</span>
               </button>
             </div>
 
@@ -497,20 +534,17 @@ export default function MenuOverlay({ isOpen, onClose }) {
                 setTimeout(() => {
                   setPassSubscribed(false);
                   setActiveModal(null);
-                }, 1800);
+                }, 1600);
               }}
-              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 font-bold text-sm text-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-sm text-white flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
               {passSubscribed ? (
                 <>
-                  <Check className="w-4 h-4 text-black" />
-                  <span>Pass Activated! Zero Fare applied</span>
+                  <Check className="w-4 h-4" />
+                  <span>Pass Activated!</span>
                 </>
               ) : (
-                <>
-                  <CreditCard className="w-4 h-4" />
-                  <span>Subscribe to {selectedPass.toUpperCase()} Pass</span>
-                </>
+                <span>Subscribe to {selectedPass.toUpperCase()} Pass</span>
               )}
             </button>
           </div>
@@ -519,74 +553,65 @@ export default function MenuOverlay({ isOpen, onClose }) {
 
       {/* 4. LANGUAGE MODAL */}
       {activeModal === 'lang' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-cyan-500/40 rounded-3xl p-6 md:p-8 max-w-md w-full text-white shadow-2xl relative animate-scale-up">
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-[#DCDAF0] rounded-3xl p-6 md:p-8 max-w-md w-full text-[#0A0A14] shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#F1F0FA] hover:bg-[#E2E8F0] flex items-center justify-center text-[#5B5B73] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400">
+              <div className="p-3 rounded-2xl bg-cyan-50 text-cyan-600">
                 <Globe className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Select Language / ಭಾಷೆ / भाषा</h3>
-                <span className="text-xs text-[#8E96A6]">Change Interface Language</span>
+                <h3 className="text-xl font-bold text-[#0A0A14]">Select Language / ಭಾಷೆ / भाषा</h3>
+                <span className="text-xs text-[#5B5B73]">Choose Your Preferred Interface</span>
               </div>
             </div>
 
-            <div className="space-y-3 my-6">
+            <div className="space-y-2.5 my-5">
               <button
-                onClick={() => { setLang('en'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
+                onClick={() => setLang('en')}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'en'
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white'
-                    : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
+                    ? 'bg-cyan-50 border-cyan-500 text-cyan-950 font-bold ring-2 ring-cyan-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#0A0A14] hover:bg-white'
                 }`}
               >
-                <div className="text-left">
-                  <span className="text-base font-bold block">English</span>
-                  <span className="text-xs text-[#8E96A6]">Default platform interface</span>
-                </div>
-                {lang === 'en' && <Check className="w-5 h-5 text-cyan-400" />}
+                <span>English (Default)</span>
+                {lang === 'en' && <Check className="w-4 h-4 text-cyan-600" />}
               </button>
 
               <button
-                onClick={() => { setLang('kn'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
+                onClick={() => setLang('kn')}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'kn'
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white'
-                    : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
+                    ? 'bg-cyan-50 border-cyan-500 text-cyan-950 font-bold ring-2 ring-cyan-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#0A0A14] hover:bg-white'
                 }`}
               >
-                <div className="text-left">
-                  <span className="text-base font-bold block">ಕನ್ನಡ (Kannada)</span>
-                  <span className="text-xs text-[#8E96A6]">ಕರ್ನಾಟಕದ ಅಧಿಕೃತ ಭಾಷೆ</span>
-                </div>
-                {lang === 'kn' && <Check className="w-5 h-5 text-cyan-400" />}
+                <span>ಕನ್ನಡ (Kannada)</span>
+                {lang === 'kn' && <Check className="w-4 h-4 text-cyan-600" />}
               </button>
 
               <button
-                onClick={() => { setLang('hi'); }}
-                className={`w-full p-4 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
+                onClick={() => setLang('hi')}
+                className={`w-full p-3.5 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                   lang === 'hi'
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white'
-                    : 'bg-white/5 border-white/10 text-[#C9CFDA] hover:bg-white/10'
+                    ? 'bg-cyan-50 border-cyan-500 text-cyan-950 font-bold ring-2 ring-cyan-500/20'
+                    : 'bg-[#F8F9FD] border-[#DCDAF0] text-[#0A0A14] hover:bg-white'
                 }`}
               >
-                <div className="text-left">
-                  <span className="text-base font-bold block">हिंदी (Hindi)</span>
-                  <span className="text-xs text-[#8E96A6]">सरल और सहज इंटरफ़ेस</span>
-                </div>
-                {lang === 'hi' && <Check className="w-5 h-5 text-cyan-400" />}
+                <span>हिंदी (Hindi)</span>
+                {lang === 'hi' && <Check className="w-4 h-4 text-cyan-600" />}
               </button>
             </div>
 
             <button
               onClick={() => setActiveModal(null)}
-              className="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-sm transition-all shadow-lg shadow-cyan-500/20 cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-[#0A0A14] hover:bg-[#3A4DFF] text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
             >
               Apply Language ({lang.toUpperCase()})
             </button>
@@ -594,146 +619,45 @@ export default function MenuOverlay({ isOpen, onClose }) {
         </div>
       )}
 
-      {/* 5. SOS EMERGENCY SETUP MODAL */}
-      {activeModal === 'sos' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-rose-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
-            <button
-              onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Emergency SOS Pre-Setup</h3>
-                <span className="text-xs text-[#8E96A6]">Early Emergency Contacts & Live Location Broadcast</span>
-              </div>
-            </div>
+      {/* 5. SOS EMERGENCY CONTACTS MODAL */}
+      <EmergencyContactsModal
+        isOpen={activeModal === 'sos'}
+        onClose={() => setActiveModal(null)}
+      />
 
-            <p className="text-xs text-[#C9CFDA] mb-4">
-              Configure your emergency safety settings now. During any trip, 1-tap SOS alerts our Belagavi safety response center and broadcasts your live GPS map link.
-            </p>
-
-            <div className="space-y-3 mb-5">
-              <div>
-                <label className="text-[11px] text-[#8E96A6] block mb-1">PRIMARY EMERGENCY CONTACT</label>
-                <input
-                  type="tel"
-                  value={emergencyPhone}
-                  onChange={(e) => setEmergencyPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-rose-400"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] text-[#8E96A6] block mb-1">SECONDARY CONTACT (OPTIONAL)</label>
-                <input
-                  type="tel"
-                  value={secondaryPhone}
-                  onChange={(e) => setSecondaryPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                <div>
-                  <span className="text-xs font-bold text-white block">Auto Send Live GPS Location</span>
-                  <span className="text-[10px] text-rose-300">Automatically SMS live ride tracking link on SOS trigger</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAutoShareGps(!autoShareGps)}
-                  className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${autoShareGps ? 'bg-rose-500' : 'bg-white/20'}`}
-                >
-                  <span className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${autoShareGps ? 'right-1' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setSosSaved(true);
-                setTimeout(() => {
-                  setSosSaved(false);
-                  setActiveModal(null);
-                }, 1800);
-              }}
-              className="w-full py-3.5 rounded-xl bg-rose-500 hover:bg-rose-600 font-bold text-sm text-white flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-500/30 cursor-pointer"
-            >
-              {sosSaved ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Emergency Safety Preferences Saved!</span>
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="w-4 h-4" />
-                  <span>Save Emergency SOS Details</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 6. ABOUT MYSAWARI MODAL */}
+      {/* 6. ABOUT MODAL */}
       {activeModal === 'about' && (
-        <div className="fixed inset-0 z-60 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121224] border border-violet-500/40 rounded-3xl p-6 md:p-8 max-w-lg w-full text-white shadow-2xl relative animate-scale-up">
+        <div className="fixed inset-0 z-60 bg-black/50 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-[#DCDAF0] rounded-3xl p-6 md:p-8 max-w-lg w-full text-[#0A0A14] shadow-2xl relative animate-scale-up">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#F1F0FA] hover:bg-[#E2E8F0] flex items-center justify-center text-[#5B5B73] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-violet-500/20 text-violet-400">
-                <Info className="w-6 h-6" />
-              </div>
+              <img src="/logo.png" alt="MySawari" className="w-10 h-10 rounded-xl object-contain shadow-xs" />
               <div>
-                <h3 className="text-2xl font-bold">About MySawari</h3>
-                <span className="text-xs text-[#8E96A6]">Belagavi's 3D Smart Mobility Network</span>
+                <h3 className="text-xl font-bold text-[#0A0A14]">About MySawari</h3>
+                <span className="text-xs text-[#5B5B73]">Belagavi Smart Mobility Platform</span>
               </div>
             </div>
 
-            <div className="space-y-4 text-xs text-[#C9CFDA] leading-relaxed">
+            <div className="space-y-3 text-xs text-[#5B5B73] leading-relaxed mb-5">
               <p>
-                <strong className="text-white">MySawari (ಮೈಸವಾರಿ / मायसवारी)</strong> is Belagavi's first intelligent 3D ride dispatch and commuter pooling platform, designed specifically to tackle the urban transit challenges of tier-2 cities.
+                <strong className="text-[#0A0A14]">MySawari</strong> is Belagavi's homegrown smart mobility network with 3D fleet dispatch, commuter pooling (Ride Buddy), and zero-surge upfront pricing.
               </p>
-
-              <div className="bg-white/5 rounded-2xl p-4 border border-white/10 space-y-2">
-                <h4 className="hud text-[10px] text-violet-400 font-bold uppercase">Our Core Pillars</h4>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span><strong>Zero Commission Autos:</strong> 100% of auto fares go to local drivers with no predatory platform cuts.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span><strong>3D Vehicle Morph Engine:</strong> Real-time interactive vehicle preview powered by Three.js.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span><strong>MySawari Coins:</strong> Every ride earns 10 coins redeemable for discounts on future commutes.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span><strong>Safety & SOS First:</strong> Built-in route diversion alerts and 1-tap live GPS tracking.</span>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-[#8E96A6] pt-2 border-t border-white/10 flex items-center justify-between">
-                <span>Version: 3.0.0 (Hackathon Release)</span>
-                <span>Team Polar Geeks · Belagavi</span>
+              <div className="p-3.5 bg-[#F8F9FD] rounded-2xl border border-[#DCDAF0] space-y-1.5 text-[11px]">
+                <p>✓ <strong>Zero Commission:</strong> 100% of metered fares go directly to local auto drivers.</p>
+                <p>✓ <strong>Ride Buddy:</strong> Pool rides with on-route commuters with explicit consent.</p>
+                <p>✓ <strong>3D Fleet Preview:</strong> Real-time WebGL vehicle showroom.</p>
+                <p>✓ <strong>Safety First:</strong> Live GPS beacon & 1-tap rapid dispatch.</p>
               </div>
             </div>
 
             <button
               onClick={() => setActiveModal(null)}
-              className="mt-6 w-full py-3 rounded-xl bg-violet-500 hover:bg-violet-600 text-white font-bold text-xs transition-all cursor-pointer"
+              className="w-full py-3.5 rounded-2xl bg-[#0A0A14] text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
             >
               Close
             </button>

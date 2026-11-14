@@ -114,7 +114,10 @@ export default function ProfileDrawer({ isOpen, onClose }) {
           {/* Top Bar with User Info */}
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-4 border-b border-[#DCDAF0]">
-              <span className="hud text-xs text-[#3A4DFF] font-bold">MYSAWARI RIDER PROFILE</span>
+              <div className="flex items-center gap-2">
+                <img src="/logo.png" alt="MySawari" className="w-6 h-6 rounded-lg object-contain shadow-xs" />
+                <span className="hud text-xs text-[#3A4DFF] font-bold">MYSAWARI RIDER PROFILE</span>
+              </div>
               <button
                 onClick={onClose}
                 className="w-9 h-9 rounded-full bg-[#F1F0FA] hover:bg-[#E9ECF2] flex items-center justify-center text-[#5B5B73]"

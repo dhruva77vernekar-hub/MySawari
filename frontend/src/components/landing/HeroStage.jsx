@@ -10,7 +10,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import VehicleMorphCanvas from '../../three/VehicleMorphCanvas';
-import DotGrid from '../ui/DotGrid';
+import WarpTwister from '../ui/WarpTwister';
 import { useVehicle } from '../../context/VehicleContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { MOCK_LOCATIONS } from '../../mock/mockData';
@@ -50,29 +50,26 @@ export default function HeroStage() {
   };
 
   return (
-    <section className="relative min-h-[95vh] md:min-h-screen pt-28 pb-16 px-4 md:px-6 flex flex-col items-center justify-between overflow-hidden bg-gradient-to-b from-[#E9ECF2] via-[#F1F0FA] to-[#F1F0FA]">
-      {/* Interactive DotGrid Background (React Bits) */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
-        <DotGrid
-          baseColor="#C9CFDA"
-          activeColor="#3A4DFF"
-          shape="circle"
-          dotSize={4}
-          gap={24}
-          proximity={140}
-          strength={1.2}
-          bounce={0.5}
-          tension={0.35}
-          returnDuration={0.7}
-          shockRadius={320}
-          shockStrength={4.5}
-          swell={0.8}
-          stretch={0.4}
-          glow={0.5}
-          fade={0.25}
-          intro={true}
-          mouseInteraction={true}
-          clickShock={true}
+    <section className="relative min-h-[90vh] md:min-h-[92vh] pt-24 pb-16 px-4 md:px-6 flex flex-col items-center justify-between overflow-hidden bg-gradient-to-b from-[#E9ECF2] via-[#F1F0FA] to-[#F1F0FA]">
+      {/* Atmospheric Warp Twister Background (React Bits Pro) */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-80 overflow-hidden">
+        <WarpTwister
+          radius={1.6}
+          narrow={1.8}
+          length={12}
+          hazeSpeed={0.4}
+          dustSpeed={0.9}
+          hazeStrength={0.28}
+          hazeFrequency={95}
+          dustDensity={320}
+          dustSize={95}
+          dustOpacity={0.18}
+          edgeFade={2.2}
+          spiralTight={0.5}
+          rotSpeed={0.12}
+          baseColor={[0.753, 0.518, 0.988]}
+          baseColorLight={[0.227, 0.302, 1.0]}
+          cameraDistance={8.0}
         />
       </div>
 
@@ -111,37 +108,35 @@ export default function HeroStage() {
 
         {/* If user slides and rickshaw comes (or for active vehicle), put enter pickup and destination input below that */}
         <div className="w-full max-w-2xl mt-4 z-20">
-          {/* Rickshaw Special Alert Banner */}
-          {isRickshaw && (
-            <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-[#F59E0B]/20 via-[#FFC21A]/15 to-transparent border border-[#F59E0B]/30 flex items-center justify-between text-left animate-fade-in shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">🛺</span>
-                <div>
-                  <h4 className="text-xs font-bold text-[#0A0A14]">{t('autoActiveBanner')}</h4>
-                  <p className="text-[10px] text-[#5B5B73]">{t('autoTagline')}</p>
-                </div>
-              </div>
-              <span className="hud text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B] text-black font-bold">
-                ₹30 BASE
+          {/* Active Vehicle Showroom Highlight Banner */}
+          <div className="mb-3 p-3.5 rounded-2xl bg-white/85 backdrop-blur-md border border-[#DCDAF0] shadow-sm flex items-center justify-between text-left animate-fade-in transition-all">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">
+                {selectedVehicle?.code === 'auto' ? '🛺' : 
+                 selectedVehicle?.code === 'comfort' ? '✨' : 
+                 selectedVehicle?.code === 'xl' ? '🚙' : 
+                 selectedVehicle?.code === 'bike' ? '🛵' : '⚡'}
               </span>
-            </div>
-          )}
-
-          {/* Comfort Special Alert Banner */}
-          {selectedVehicle?.code === 'comfort' && (
-            <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-400/15 to-transparent border border-amber-400/30 flex items-center justify-between text-left animate-fade-in shadow-sm">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">✨</span>
-                <div>
-                  <h4 className="text-xs font-bold text-[#0A0A14]">Comfort Sedan Selected · Extra Legroom & AC</h4>
-                  <p className="text-[10px] text-[#5B5B73]">Top rated Belagavi captains · Clean premium interior</p>
-                </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#0A0A14] flex items-center gap-2">
+                  <span>{selectedVehicle?.label}</span>
+                  <span className="hud text-[9px] px-1.5 py-0.2 rounded-full bg-[#F1F0FA] text-[#3A4DFF]">
+                    {selectedVehicle?.tag}
+                  </span>
+                </h4>
+                <p className="text-[11px] text-[#5B5B73]">
+                  {selectedVehicle?.code === 'auto' && 'Iconic 3-Wheeler · Fastest pickup in Belagavi traffic'}
+                  {selectedVehicle?.code === 'comfort' && 'Comfort Sedan · Top rated Belagavi captains, extra legroom & AC'}
+                  {selectedVehicle?.code === 'xl' && 'Spacious 6-Seater SUV · Room for the whole family & airport luggage'}
+                  {selectedVehicle?.code === 'bike' && 'Electric Bike Taxi · Pocket friendly solo commute with sanitized helmet'}
+                  {selectedVehicle?.code === 'cab' && 'All-Electric Fastback Sedan · Smooth, silent & zero-emission city ride'}
+                </p>
               </div>
-              <span className="hud text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-black font-bold">
-                ₹65 BASE
-              </span>
             </div>
-          )}
+            <span className="hud text-[11px] px-3 py-1 rounded-full bg-[#0A0A14] text-white font-bold flex-shrink-0 ml-2">
+              ₹{selectedVehicle?.baseFare || 50} BASE
+            </span>
+          </div>
 
           {/* Pickup and Destination Input Card directly below the 3D slider */}
           <div className={`p-4 sm:p-6 rounded-[28px] bg-white border shadow-[0_25px_70px_-20px_rgba(58,77,255,0.22)] text-left space-y-4 transition-all ${
