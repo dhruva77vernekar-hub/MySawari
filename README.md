@@ -18,6 +18,11 @@
   Hyper-local Belagavi auto, cab, bike, and multi-passenger ride booking engineered with real-time 3D vehicle physics, live OSRM routing, real SMS/WhatsApp emergency alerts, and predictive demand intelligence.
 </p>
 
+<p align="center">
+  🌐 <b>Production Deployment URL:</b> <a href="https://mysawari-belagavi.vercel.app"><b>https://mysawari-belagavi.vercel.app</b></a><br>
+  🚀 <b>Vercel Project Dashboard:</b> <a href="https://vercel.com/duv4/frontend">vercel.com/duv4/frontend</a>
+</p>
+
 </div>
 
 ---
