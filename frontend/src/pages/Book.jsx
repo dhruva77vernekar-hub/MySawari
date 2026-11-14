@@ -29,6 +29,7 @@ import PaymentModal from '../components/payment/PaymentModal';
 import incidentService from '../services/incidentService';
 import ReportIncidentModal from '../components/modals/ReportIncidentModal';
 import AppDispatchView from '../components/booking/AppDispatchView';
+import { parseBookingIntent } from '../services/aiBookingParser';
 
 export default function Book() {
   const navigate = useNavigate();
@@ -214,19 +215,22 @@ export default function Book() {
     setDropCoords(tempCoords);
   };
 
-  // AI prompt simulation
+  // Natural Language & Voice AI Parser
   const handleAiParse = () => {
     if (!aiPrompt.trim()) return;
+    const parsed = parseBookingIntent(aiPrompt, pickupCoords);
+    if (!parsed) return;
+
     setAiParsed({
-      pickup: 'KLE Technological University',
-      drop: 'Rani Chennamma Circle',
-      preference: 'Cheapest Ride'
+      pickup: parsed.pickup,
+      drop: parsed.drop,
+      preference: parsed.vehicleLabel
     });
-    setPickup('KLE Technological University Campus');
-    setPickupCoords(MOCK_LOCATIONS[0]);
-    setDrop('Rani Chennamma Circle');
-    setDropCoords(MOCK_LOCATIONS[1]);
-    selectVehicleByCode('bike');
+    setPickup(parsed.pickup);
+    setPickupCoords(parsed.pickupCoords);
+    setDrop(parsed.drop);
+    setDropCoords(parsed.dropCoords);
+    selectVehicleByCode(parsed.vehicleCode);
   };
 
   // Confirm booking - opens Razorpay payment modal

@@ -27,12 +27,13 @@ import { useVehicle } from '../../context/VehicleContext';
 import routingService from '../../services/routingService';
 import incidentService from '../../services/incidentService';
 import ReportIncidentModal from '../modals/ReportIncidentModal';
+import { parseBookingIntent } from '../../services/aiBookingParser';
 
 const QUICK_PROMPTS = [
-  'Book an auto from KLE to Chennamma Circle',
-  'I need a bike taxi to Belagavi Railway Station',
-  'Get a cab from Tilakwadi to Bogarves Plaza',
-  'What are the ride fares across Belagavi?'
+  'Book a ride from KLE to Belgavi Railway Station',
+  'Auto from KLE to Chennamma Circle',
+  'Cab from Railway Station to VTU Campus',
+  'Bike taxi to Bogarves Plaza'
 ];
 
 export default function AIAssistantView({ onBookRide }) {
@@ -281,58 +282,87 @@ export default function AIAssistantView({ onBookRide }) {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('mysawari_token') || 'demo-rider-token';
-      const response = await fetch('http://localhost:4000/api/assistant/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ message: msgToSend })
-      });
+      // 1. High-precision Natural Language Intent Parsing
+      const parsed = parseBookingIntent(msgToSend);
 
-      const resJson = await response.json();
-      const data = resJson.data || resJson;
+      // 2. Check backend if configured
+      let data = null;
+      const API_BASE = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+        ? import.meta.env.VITE_API_URL
+        : (import.meta.env.DEV ? 'http://localhost:4000' : '');
+
+      if (API_BASE) {
+        try {
+          const token = localStorage.getItem('mysawari_token') || 'demo-rider-token';
+          const response = await fetch(`${API_BASE}/api/assistant/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ message: msgToSend })
+          });
+          if (response.ok) {
+            const resJson = await response.json();
+            data = resJson.data || resJson;
+          }
+        } catch (netErr) {
+          console.warn('Backend assistant unreachable, using high-precision client parser:', netErr.message);
+        }
+      }
+
+      // 3. Determine final accurate pickup and drop locations from user's voice/text
+      const pickup = data?.pickupCoords?.name || parsed?.pickup || 'KLE Technological University Campus';
+      const drop = data?.dropCoords?.name || parsed?.drop || 'Belagavi Railway Station';
+      const pickupCoords = data?.pickupCoords || parsed?.pickupCoords || { lat: 15.8281, lng: 74.4925, name: pickup };
+      const dropCoords = data?.dropCoords || parsed?.dropCoords || { lat: 15.8672, lng: 74.5126, name: drop };
+      const vCode = data?.vehicleType || parsed?.vehicleCode || 'auto';
+      const vLabel = parsed?.vehicleLabel || 'Auto Rickshaw';
+      const distanceKm = data?.distanceKm || parsed?.distanceKm || 4.5;
+      const durationMin = data?.durationMin || parsed?.durationMin || 12;
+      const fare = data?.estimatedFare || parsed?.fare || 65;
+      const replyText = data?.reply || parsed?.reply || `I've planned your ride from ${pickup} to ${drop} (~${distanceKm} km, ₹${fare}). Would you like to confirm?`;
 
       const aiMsgId = `ai_${Date.now()}`;
       const aiMsg = {
         id: aiMsgId,
         role: 'assistant',
-        text: data.reply || "I'm ready to help you book any ride in Belagavi.",
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
       setMessages((prev) => [...prev, aiMsg]);
       speakText(aiMsg.text, aiMsgId);
 
-      // If a ride was parsed, fetch ALL available routes and check road incidents
-      if (data.canInstantBook && data.pickupCoords && data.dropCoords) {
-        const vCode = data.vehicleType || 'auto';
-        const proposal = {
-          pickup: data.pickupText || data.pickupCoords.name,
-          drop: data.dropText || data.dropCoords.name,
-          pickupCoords: data.pickupCoords,
-          dropCoords: data.dropCoords,
-          vehicleCode: vCode,
-          fare: data.estimatedFare || 65,
-          distanceKm: data.distanceKm || 4.2,
-          durationMin: data.durationMin || 14
-        };
-        setBookingProposal(proposal);
+      // 4. Update the live proposal card with the exact route user requested
+      const proposal = {
+        pickup,
+        drop,
+        pickupCoords,
+        dropCoords,
+        vehicleCode: vCode,
+        vehicleLabel: vLabel,
+        fare,
+        distanceKm,
+        durationMin
+      };
+      setBookingProposal(proposal);
 
-        // Fetch all routes (Fastest, Shortest, Hazard-Free Alternate)
-        routingService.getAllRoutes(data.pickupCoords, data.dropCoords).then((routes) => {
-          if (routes) {
-            setProposalRoutes(routes);
-            setSelectedRouteType('fastest');
-            const hazards = incidentService.detectRouteHazards(routes.fastest.coordinates, incidents);
-            setDetectedRouteHazards(hazards);
-          }
-        });
-      }
+      // Fetch all routes (Fastest, Shortest, Hazard-Free Alternate)
+      routingService.getAllRoutes(pickupCoords, dropCoords).then((routes) => {
+        if (routes) {
+          setProposalRoutes(routes);
+          setSelectedRouteType('fastest');
+          const hazards = incidentService.detectRouteHazards(routes.fastest.coordinates, incidents);
+          setDetectedRouteHazards(hazards);
+        }
+      });
     } catch (err) {
-      console.warn('Assistant fetch error, using local fallback:', err);
-      const reply = `I've noted your request for "${msgToSend}". Let's confirm your ride details!`;
+      console.warn('Assistant error:', err);
+      const parsed = parseBookingIntent(msgToSend);
+      const pickup = parsed?.pickup || 'KLE Technological University Campus';
+      const drop = parsed?.drop || 'Belagavi Railway Station';
+      const reply = `I've noted your ride from ${pickup} to ${drop}. Let's confirm your booking!`;
       const aiMsgId = `ai_${Date.now()}`;
       setMessages((prev) => [
         ...prev,
@@ -345,28 +375,22 @@ export default function AIAssistantView({ onBookRide }) {
       ]);
       speakText(reply, aiMsgId);
 
-      const vCode = msgToSend.toLowerCase().includes('bike') ? 'bike' : (msgToSend.toLowerCase().includes('cab') ? 'cab' : 'auto');
-      const pickupCoords = { lat: 15.8281, lng: 74.4925, name: 'KLE Technological University Campus' };
-      const dropCoords = { lat: 15.8595, lng: 74.5089, name: 'Rani Chennamma Circle' };
-
       const proposal = {
-        pickup: 'KLE Technological University Campus',
-        drop: 'Rani Chennamma Circle',
-        pickupCoords,
-        dropCoords,
-        vehicleCode: vCode,
-        fare: 68,
-        distanceKm: 4.2,
-        durationMin: 14
+        pickup,
+        drop,
+        pickupCoords: parsed?.pickupCoords || { lat: 15.8281, lng: 74.4925, name: pickup },
+        dropCoords: parsed?.dropCoords || { lat: 15.8672, lng: 74.5126, name: drop },
+        vehicleCode: parsed?.vehicleCode || 'auto',
+        fare: parsed?.fare || 75,
+        distanceKm: parsed?.distanceKm || 5.1,
+        durationMin: parsed?.durationMin || 14
       };
       setBookingProposal(proposal);
 
-      routingService.getAllRoutes(pickupCoords, dropCoords).then((routes) => {
+      routingService.getAllRoutes(proposal.pickupCoords, proposal.dropCoords).then((routes) => {
         if (routes) {
           setProposalRoutes(routes);
           setSelectedRouteType('fastest');
-          const hazards = incidentService.detectRouteHazards(routes.fastest.coordinates, incidents);
-          setDetectedRouteHazards(hazards);
         }
       });
     } finally {

@@ -17,10 +17,14 @@ import {
   AlertTriangle,
   Locate,
   Zap,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Mic,
+  MicOff,
+  Volume2
 } from 'lucide-react';
 import MapIntegration from '../map/MapIntegration';
 import { MOCK_LOCATIONS } from '../../mock/mockData';
+import { parseBookingIntent } from '../../services/aiBookingParser';
 
 export default function AppDispatchView({
   pickup,
@@ -53,6 +57,88 @@ export default function AppDispatchView({
   const [searchQuery, setSearchQuery] = useState('');
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(Boolean(drop && dropCoords?.lat));
   const [activeDriverPopup, setActiveDriverPopup] = useState(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiVoicePrompt, setAiVoicePrompt] = useState('');
+  const [isAiListening, setIsAiListening] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState(null);
+  const recognitionRef = useRef(null);
+
+  const handleRunAi = (promptText) => {
+    const text = promptText || aiVoicePrompt;
+    if (!text || !text.trim()) return;
+
+    const parsed = parseBookingIntent(text, pickupCoords);
+    if (!parsed) return;
+
+    setPickup(parsed.pickup);
+    setPickupCoords(parsed.pickupCoords);
+    setDrop(parsed.drop);
+    setDropCoords(parsed.dropCoords);
+    if (parsed.vehicleCode) {
+      const matchVehicle = vehicles.find((v) => v.code === parsed.vehicleCode);
+      if (matchVehicle && onSelectVehicle) onSelectVehicle(matchVehicle);
+    }
+    setAiFeedback(parsed.reply);
+    setIsDrawerExpanded(true);
+
+    setTimeout(() => {
+      setIsAiModalOpen(false);
+      setAiFeedback(null);
+      setAiVoicePrompt('');
+    }, 1500);
+  };
+
+  const toggleAiVoice = () => {
+    if (isAiListening) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (_) {}
+      }
+      setIsAiListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setAiFeedback('Speech recognition not supported in this browser. Please type or tap quick routes below.');
+      return;
+    }
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-IN';
+
+      rec.onstart = () => {
+        setIsAiListening(true);
+        setAiFeedback('Listening... Speak your ride (e.g. "Ride from KLE to Railway Station")');
+      };
+
+      rec.onresult = (e) => {
+        const transcript = e.results?.[0]?.[0]?.transcript;
+        if (transcript) {
+          setAiVoicePrompt(transcript);
+          setIsAiListening(false);
+          handleRunAi(transcript);
+        }
+      };
+
+      rec.onerror = () => {
+        setIsAiListening(false);
+        setAiFeedback('Could not capture audio. Please try speaking again or type your prompt.');
+      };
+
+      rec.onend = () => {
+        setIsAiListening(false);
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch (err) {
+      setIsAiListening(false);
+      setAiFeedback('Microphone unavailable. Please type your prompt.');
+    }
+  };
 
   // Auto-expand vehicle bottom drawer when drop location is set
   useEffect(() => {
@@ -159,17 +245,15 @@ export default function AppDispatchView({
 
         {/* Studio View Switcher / AI Assistant Pill */}
         <div className="flex items-center gap-2 pointer-events-auto flex-shrink-0">
-          {onOpenAiBooking && (
-            <button
-              type="button"
-              onClick={onOpenAiBooking}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-[#3A4DFF] hover:bg-[#2A3DE8] text-white text-[11px] font-bold shadow-md transition-all cursor-pointer"
-              title="Book with AI Voice or Natural Language"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>AI Booking</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2.5 rounded-full bg-[#3A4DFF] hover:bg-[#2A3DE8] text-white text-[11px] font-bold shadow-md transition-all cursor-pointer"
+            title="Book with AI Voice or Natural Language"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>AI Booking</span>
+          </button>
 
           {onToggleView && (
             <button
@@ -451,6 +535,111 @@ export default function AppDispatchView({
                   <ArrowRight className="w-3.5 h-3.5 text-[#8E96A6]" />
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. AI Voice & Natural Language Booking Modal */}
+      {isAiModalOpen && (
+        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center animate-fade-in pointer-events-auto">
+          <div className="w-full max-w-lg bg-white rounded-[28px] border border-[#DCDAF0] p-6 shadow-2xl flex flex-col space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E9ECF2]">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl bg-[#3A4DFF]/10 text-[#3A4DFF]">
+                  <Sparkles className="w-4 h-4 text-[#3A4DFF]" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm text-[#0A0A14]">Sawari AI Voice Booking</h3>
+                  <span className="text-[10px] text-[#8E96A6]">Belagavi Natural Language Dispatch</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-[#F1F0FA] text-[#5B5B73]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Voice Mic Button */}
+            <div className="flex flex-col items-center justify-center py-2 space-y-2">
+              <button
+                type="button"
+                onClick={toggleAiVoice}
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-lg ${
+                  isAiListening
+                    ? 'bg-red-500 text-white animate-pulse ring-4 ring-red-300'
+                    : 'bg-[#3A4DFF] text-white hover:bg-[#2A3DE8]'
+                }`}
+              >
+                {isAiListening ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+              </button>
+              <span className="text-xs font-bold text-[#0A0A14]">
+                {isAiListening ? 'Listening to your voice...' : 'Tap to speak your ride'}
+              </span>
+              <p className="text-[11px] text-[#5B5B73] text-center max-w-xs">
+                Speak naturally, e.g. <i>"Book a ride from KLE to Belgavi Railway Station"</i>
+              </p>
+            </div>
+
+            {/* Feedback alert if parsed or listening */}
+            {aiFeedback && (
+              <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs font-medium flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>{aiFeedback}</span>
+              </div>
+            )}
+
+            {/* Text Input Fallback */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[10px] font-bold text-[#8E96A6] uppercase block">Or type your request</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={aiVoicePrompt}
+                  onChange={(e) => setAiVoicePrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRunAi()}
+                  placeholder="e.g. KLE to Belgavi Railway Station"
+                  className="flex-1 px-3.5 py-3 rounded-2xl bg-[#F8F9FD] border border-[#DCDAF0] text-xs font-semibold text-[#0A0A14] focus:outline-none focus:border-[#3A4DFF]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRunAi()}
+                  className="px-4 py-3 rounded-2xl bg-[#3A4DFF] hover:bg-[#2A3DE8] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                >
+                  Plan
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Prompts */}
+            <div className="pt-1">
+              <span className="text-[10px] font-bold text-[#8E96A6] uppercase block mb-1.5">Quick Try</span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleRunAi('Book a ride from KLE to Belgavi Railway Station')}
+                  className="px-2.5 py-1 rounded-lg bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] text-[10px] font-semibold cursor-pointer"
+                >
+                  KLE ➔ Railway Station
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRunAi('Auto from Railway Station to Rani Chennamma Circle')}
+                  className="px-2.5 py-1 rounded-lg bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] text-[10px] font-semibold cursor-pointer"
+                >
+                  Station ➔ Chennamma Circle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRunAi('Cab from KLE Tech to VTU Campus')}
+                  className="px-2.5 py-1 rounded-lg bg-[#F1F0FA] hover:bg-[#E9ECF2] text-[#0A0A14] text-[10px] font-semibold cursor-pointer"
+                >
+                  KLE ➔ VTU Campus
+                </button>
+              </div>
             </div>
           </div>
         </div>
